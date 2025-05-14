@@ -1,4 +1,4 @@
-package org.example;
+package org.example.controller;
 
 import org.json.JSONArray;
 import org.json.JSONException;

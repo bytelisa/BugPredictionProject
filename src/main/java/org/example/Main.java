@@ -1,5 +1,6 @@
 package org.example;
 
+import org.example.controller.ReleaseInfoExtractor;
 import org.json.JSONException;
 
 import java.io.IOException;
