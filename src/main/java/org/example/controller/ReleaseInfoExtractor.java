@@ -20,23 +20,24 @@ public class ReleaseInfoExtractor {
     //ignore the last 66% of releases
     //uses Jira Rest API to extract data regarding releases
 
-    public static HashMap<LocalDateTime, String> releaseNames;
-    public static HashMap<LocalDateTime, String> releaseID;
-    public static ArrayList<LocalDateTime> releases;
-    public static Integer numVersions;
+    private static HashMap<LocalDateTime, String> releaseNames;
+    private static HashMap<LocalDateTime, String> releaseID;
+    private static ArrayList<LocalDateTime> releases;
+    private static Integer numVersions;
 
     public static void extractReleases() throws IOException, JSONException {
 
         String projName ="OPENJPA";
+
         //Fills the arraylist with releases dates and orders them
         //Ignores releases with missing dates
-        releases = new ArrayList<LocalDateTime>();
+        releases = new ArrayList<>();
         Integer i;
         String url = "https://issues.apache.org/jira/rest/api/2/project/" + projName;
         JSONObject json = readJsonFromUrl(url);
         JSONArray versions = json.getJSONArray("versions");
-        releaseNames = new HashMap<LocalDateTime, String>();
-        releaseID = new HashMap<LocalDateTime, String> ();
+        releaseNames = new HashMap<>();
+        releaseID = new HashMap<>();
         for (i = 0; i < versions.length(); i++ ) {
             String name = "";
             String id = "";
@@ -51,7 +52,7 @@ public class ReleaseInfoExtractor {
         }
 
         // order releases by date
-        Collections.sort(releases, new Comparator<LocalDateTime>(){
+        releases.sort(new Comparator<>() {
             //@Override
             public int compare(LocalDateTime o1, LocalDateTime o2) {
                 return o1.compareTo(o2);
@@ -65,7 +66,8 @@ public class ReleaseInfoExtractor {
         try {
             fileWriter = null;
             String outname = projName + "VersionInfo.csv";
-            String dir = "C:\\Users\\elisa\\Desktop\\Magistrale\\ISW2\\BugPredictionProject\\src\\main\\outputFiles";
+            //String dir = "C:\\Users\\elisa\\Desktop\\Magistrale\\ISW2\\BugPredictionProject\\src\\main\\outputFiles";
+            String dir = "src/main/outputFiles";
 
             //Name of CSV for output, directory where it will be saved
             fileWriter = new FileWriter(new File (dir, outname));
@@ -113,7 +115,6 @@ public class ReleaseInfoExtractor {
             releases.add(dateTime);
         releaseNames.put(dateTime, name);
         releaseID.put(dateTime, id);
-        return;
     }
 
 
