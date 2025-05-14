@@ -49,6 +49,7 @@ public class ReleaseInfoExtractor {
                         name,id);
             }
         }
+
         // order releases by date
         Collections.sort(releases, new Comparator<LocalDateTime>(){
             //@Override
@@ -56,14 +57,19 @@ public class ReleaseInfoExtractor {
                 return o1.compareTo(o2);
             }
         });
+
         if (releases.size() < 6)
             return;
         FileWriter fileWriter = null;
+
         try {
             fileWriter = null;
             String outname = projName + "VersionInfo.csv";
-            //Name of CSV for output
-            fileWriter = new FileWriter(outname);
+            String dir = "C:\\Users\\elisa\\Desktop\\Magistrale\\ISW2\\BugPredictionProject\\src\\main\\outputFiles";
+
+            //Name of CSV for output, directory where it will be saved
+            fileWriter = new FileWriter(new File (dir, outname));
+
             //csv file columns
             fileWriter.append("Index,Version ID,Version Name,Date");
             fileWriter.append("\n");
@@ -87,6 +93,7 @@ public class ReleaseInfoExtractor {
             e.printStackTrace();
         } finally {
             try {
+                assert fileWriter != null;
                 fileWriter.flush();
                 fileWriter.close();
             } catch (IOException e) {
