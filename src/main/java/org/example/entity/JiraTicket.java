@@ -21,7 +21,7 @@ public class JiraTicket {
     private String resolution;  //fixed
     private String creationDate;
     private String resolutionDate;
-    private String fixVersions;
+    private List<String> fixVersions;
     private List<String> affectVersions;
 
     public JiraTicket(){}
@@ -35,9 +35,21 @@ public class JiraTicket {
         this.resolutionDate = resolutionDate;
         this.description = comment;
         this.affectVersions = affectV;
-
-
     }
+
+    //todo DUBBIO: come trovo IV senza sapere la data?
+    public JiraTicket(String id, String name,
+                      String resolution, List<String> fixV, List<String> affectV, String comment){
+        this.issueId = id;
+        this.name = name;
+        this.resolution = resolution;
+        this.description = comment;
+        this.affectVersions = affectV;
+        this.fixVersions = fixV;
+    }
+
+
+
     public JiraTicket(String id, String description, String status, String resolution,
                       boolean released, String releaseDate){
         this.issueId = id;
@@ -137,12 +149,11 @@ public class JiraTicket {
         this.affectVersions = affectVersions;
     }
 
-    public String getFixVersions() {
+    public List<String> getFixVersions() {
         return fixVersions;
     }
 
-    public void setFixVersions(String fixVersions) {
+    public void setFixVersions(List<String> fixVersions) {
         this.fixVersions = fixVersions;
     }
-
 }

@@ -28,12 +28,11 @@ public class JiraController {
     public static List<JiraTicket> extractTicketList() throws IOException {
         //extracts all tickets regarding the release identified by releaseID
 
-
         tickets = new ArrayList<>();
-        Integer i;
+        int i;
 
-        //new url directly filters tickets
 
+        // url directly filters tickets
         String url = "https://issues.apache.org/jira/rest/api/2/search?jql=project="    //basic rest api search
                 + projName +
                 "%20AND%20issuetype=Bug%20AND%20status%20in(Resolved,Closed)%20AND%20resolution=Fixed\n";   //required filters on tickets
@@ -47,10 +46,10 @@ public class JiraController {
             String resolution = "";
             String comment = "";
             List<String> affectVersions = new ArrayList<>();
+            List<String> fixVersions = new ArrayList<>();
 
             JiraTicket ticket = new JiraTicket();
-            if(jiraIssues.getJSONObject(i).has("key")) {
-
+            if(jiraIssues.getJSONObject(i).has("key") && (jiraIssues.getJSONObject(i).has("versions"))) {
 
                 //basic Jira Ticket fields
                 if (jiraIssues.getJSONObject(i).has("key"))
@@ -61,14 +60,28 @@ public class JiraController {
                     resolution = jiraIssues.getJSONObject(i).getJSONObject("resolution").getString("name");
                 }
 
-                //creation and resolution date of the issue
-                String created = jiraIssues.getJSONObject(i).getString("created");
-                String resolved = jiraIssues.getJSONObject(i).optString("resolutiondate", "N/A");
+                /*creation and resolution date of the issue
+                if (jiraIssues.getJSONObject(i).has("created")){
+                    String created = jiraIssues.getJSONObject(i).get("created").toString();
+                }
+
+                if (jiraIssues.getJSONObject(i).has("resolutiondate")){
+                    String resolved = jiraIssues.getJSONObject(i).get("resolutiondate").toString();
+                }
+
+                 */
 
                 // Affect versions
+
                 JSONArray versions = jiraIssues.getJSONObject(i).getJSONArray("versions");
                 for (int j = 0; j < versions.length(); j++) {
                     affectVersions.add(versions.getJSONObject(j).getString("name"));
+                }
+
+                // Fix versions
+                JSONArray fVersions = jiraIssues.getJSONObject(i).getJSONArray("fixVersions");
+                for (int j = 0; j < fVersions.length(); j++) {
+                    fixVersions.add(fVersions.getJSONObject(j).getString("name"));
                 }
 
                 //comment
@@ -79,12 +92,11 @@ public class JiraController {
 
                 //only consider bugs that have affect versions
                 if (!affectVersions.isEmpty()){
-                    tickets.add(new JiraTicket(issueId, name, resolution,
-                            created, resolved, affectVersions, comment));
+                    tickets.add(new JiraTicket(issueId, name, resolution
+                            , fixVersions, affectVersions, comment));
                 }
             }
         }
-
         return null;
     }
 
