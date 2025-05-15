@@ -31,13 +31,15 @@ public class JiraController {
 
         tickets = new ArrayList<>();
         Integer i;
-        //String url = "https://issues.apache.org/jira/rest/api/2/project/" + projName; // old url, less specific
 
         //new url directly filters tickets
-        String url = "https://issues.apache.org/jira/rest/api/2/search?jql=project=" + projName +
-                "AND issuetype=Bug AND status in (Resolved, Closed) AND resolution=Fixed&maxResults=1000\n";
+
+        String url = "https://issues.apache.org/jira/rest/api/2/search?jql=project="    //basic rest api search
+                + projName +
+                "%20AND%20issuetype=Bug%20AND%20status%20in(Resolved,Closed)%20AND%20resolution=Fixed\n";   //required filters on tickets
+
         JSONObject json = readJsonFromUrl(url);
-        JSONArray jiraIssues = json.getJSONArray("issue");
+        JSONArray jiraIssues = json.getJSONArray("issues");
 
         for (i = 0; i < jiraIssues.length(); i++ ) {
             String name = "";
@@ -95,7 +97,7 @@ public class JiraController {
         String dir = "src/main/outputFiles";
 
 
-        /* order tickets by date
+        /* todo order tickets by date
         tickets.sort(new Comparator<>() {
             //@Override
             public int compare(LocalDateTime o1, LocalDateTime o2) {
@@ -162,8 +164,7 @@ public class JiraController {
         try (InputStream is = new URL(url).openStream()) {
             BufferedReader rd = new BufferedReader(new InputStreamReader(is, Charset.forName("UTF-8")));
             String jsonText = readAll(rd);
-            JSONObject json = new JSONObject(jsonText);
-            return json;
+            return new JSONObject(jsonText);
         }
     }
 

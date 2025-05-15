@@ -32,12 +32,15 @@ public class ReleaseInfoExtractor {
         //Fills the arraylist with releases dates and orders them
         //Ignores releases with missing dates
         releases = new ArrayList<>();
-        Integer i;
-        String url = "https://issues.apache.org/jira/rest/api/2/project/" + projName;
-        JSONObject json = readJsonFromUrl(url);
-        JSONArray versions = json.getJSONArray("versions");
         releaseNames = new HashMap<>();
         releaseID = new HashMap<>();
+
+        Integer i;
+        String url = "https://issues.apache.org/jira/rest/api/2/project/" + projName;
+
+        JSONObject json = readJsonFromUrl(url);
+        JSONArray versions = json.getJSONArray("versions");
+
         for (i = 0; i < versions.length(); i++ ) {
             String name = "";
             String id = "";
@@ -65,11 +68,11 @@ public class ReleaseInfoExtractor {
 
         try {
             fileWriter = null;
+
+            //output file and its directory
             String outname = projName + "VersionInfo.csv";
-            //String dir = "C:\\Users\\elisa\\Desktop\\Magistrale\\ISW2\\BugPredictionProject\\src\\main\\outputFiles";
             String dir = "src/main/outputFiles";
 
-            //Name of CSV for output, directory where it will be saved
             fileWriter = new FileWriter(new File (dir, outname));
 
             //csv file columns
@@ -79,8 +82,8 @@ public class ReleaseInfoExtractor {
 
             //do not consider the last 66% of releases
             for ( i = 0; i <= ((releases.size() *33)/100); i++) {
-                Integer index = i + 1;
-                fileWriter.append(index.toString());
+                int index = i + 1;
+                fileWriter.append(Integer.toString(index));
                 fileWriter.append(",");
                 fileWriter.append(releaseID.get(releases.get(i)));
                 fileWriter.append(",");

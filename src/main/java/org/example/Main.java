@@ -13,6 +13,7 @@ public class Main {
             ReleaseInfoExtractor.extractReleases();
             JiraController.extractTicketList();
         } catch (IOException | JSONException e) {
+            e.printStackTrace();
             System.out.println("Cannot extract release data.");
         }
     }
