@@ -1,5 +1,6 @@
 package org.example;
 
+import org.example.controller.JiraController;
 import org.example.controller.ReleaseInfoExtractor;
 import org.json.JSONException;
 
@@ -10,6 +11,7 @@ public class Main {
 
         try {
             ReleaseInfoExtractor.extractReleases();
+            JiraController.extractTicketList();
         } catch (IOException | JSONException e) {
             System.out.println("Cannot extract release data.");
         }

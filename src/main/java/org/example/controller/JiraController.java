@@ -11,6 +11,7 @@ import java.nio.charset.Charset;
 import java.util.ArrayList;
 import java.util.List;
 
+
 public class JiraController {
 
     /* Extracts info about issues using the Jira Rest API
@@ -20,12 +21,13 @@ public class JiraController {
     * bugs to be excluded: bugs without an affect version (pre-release), bugs devoid of related fix commit on git
     */
 
-    private List<JiraTicket> tickets;
+    private static List<JiraTicket> tickets;
+    private static String projName ="OPENJPA";
 
-    public List<JiraTicket> extractTicketList(int releaseID) throws IOException {
+
+    public static List<JiraTicket> extractTicketList() throws IOException {
         //extracts all tickets regarding the release identified by releaseID
 
-        String projName ="OPENJPA";
 
         tickets = new ArrayList<>();
         Integer i;
@@ -82,6 +84,76 @@ public class JiraController {
         }
 
         return null;
+    }
+
+
+    public void printTicketsToCSV(){
+
+        int numTickets = tickets.size();
+        int i;
+        String outname = projName + "VersionInfo.csv";
+        String dir = "src/main/outputFiles";
+
+
+        /* order tickets by date
+        tickets.sort(new Comparator<>() {
+            //@Override
+            public int compare(LocalDateTime o1, LocalDateTime o2) {
+                return o1.compareTo(o2);
+            }
+        });
+
+         */
+
+        if (tickets.size() < 6)
+            return;
+        FileWriter fileWriter = null;
+
+        try {
+            fileWriter = null;
+
+            //Name of CSV for output, directory where it will be saved
+            fileWriter = new FileWriter(new File (dir, outname));
+
+            //csv file columns
+            fileWriter.append("Index,Name,ResolutionStatus,CreationDate,ResolutionDate,Comment,AffectVersions");
+            fileWriter.append("\n");
+
+
+            for ( i = 0; i <= tickets.size(); i++) {
+
+                Integer index = i + 1;
+                fileWriter.append(index.toString());
+                fileWriter.append(",");
+                fileWriter.append(tickets.get(i).getIssueId());
+                fileWriter.append(",");
+                fileWriter.append(tickets.get(i).getName());
+                fileWriter.append(",");
+                fileWriter.append(tickets.get(i).getResolution());
+                fileWriter.append(",");
+                fileWriter.append(tickets.get(i).getCreationDate());
+                fileWriter.append(",");
+                fileWriter.append(tickets.get(i).getResolutionDate());
+                fileWriter.append(",");
+                fileWriter.append(tickets.get(i).getDescription());
+                fileWriter.append(",");
+                fileWriter.append(tickets.get(i).getAffectVersions().toString());
+                fileWriter.append(",");
+            }
+
+        } catch (Exception e) {
+            System.out.println("Error in csv writer");
+            e.printStackTrace();
+        } finally {
+            try {
+                assert fileWriter != null;
+                fileWriter.flush();
+                fileWriter.close();
+            } catch (IOException e) {
+                System.out.println("Error while flushing/closing fileWriter !!!");
+                e.printStackTrace();
+            }
+        }
     }
 
 
