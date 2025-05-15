@@ -22,13 +22,11 @@ public class JiraController {
 
     private List<JiraTicket> tickets;
 
-    public List<JiraTicket> extractTicketsByRelease(int releaseID) throws IOException {
+    public List<JiraTicket> extractTicketList(int releaseID) throws IOException {
         //extracts all tickets regarding the release identified by releaseID
 
         String projName ="OPENJPA";
 
-        //Fills the arraylist with releases dates and orders them
-        //Ignores releases with missing dates
         tickets = new ArrayList<>();
         Integer i;
         //String url = "https://issues.apache.org/jira/rest/api/2/project/" + projName; // old url, less specific
@@ -42,25 +40,46 @@ public class JiraController {
         for (i = 0; i < jiraIssues.length(); i++ ) {
             String name = "";
             String issueId = "";
+            String resolution = "";
+            String comment = "";
+            List<String> affectVersions = new ArrayList<>();
+
             JiraTicket ticket = new JiraTicket();
             if(jiraIssues.getJSONObject(i).has("key")) {
-                /*todo  FINIRE QUI   potrei fare direttamente qui il controllo su affect version (e poi successivamente su commit hash) in modo da escludere quelli che non mi interessano
-                todo setta tutto con ticket.setid(jiraIssues...)*/
 
+
+                //basic Jira Ticket fields
                 if (jiraIssues.getJSONObject(i).has("key"))
                     issueId = jiraIssues.getJSONObject(i).get("key").toString();
                 if (jiraIssues.getJSONObject(i).has("fields.status.name"))
-                    name = jiraIssues.getJSONObject(i).get("name").toString();//id of the Jira issue
-                if (jiraIssues.getJSONObject(i).has("name"))
-                    name = jiraIssues.getJSONObject(i).get("name").toString();
-                if (jiraIssues.getJSONObject(i).has("name"))
-                    name = jiraIssues.getJSONObject(i).get("name").toString();
-                if (jiraIssues.getJSONObject(i).has("name"))
-                    name = jiraIssues.getJSONObject(i).get("name").toString();
-                tickets.add(new JiraTicket());
+                    name = jiraIssues.getJSONObject(i).getJSONObject("status").getString("name");
+                if (jiraIssues.getJSONObject(i).has("resolution") && !jiraIssues.getJSONObject(i).isNull("resolution")) {
+                    resolution = jiraIssues.getJSONObject(i).getJSONObject("resolution").getString("name");
+                }
+
+                //creation and resolution date of the issue
+                String created = jiraIssues.getJSONObject(i).getString("created");
+                String resolved = jiraIssues.getJSONObject(i).optString("resolutiondate", "N/A");
+
+                // Affect versions
+                JSONArray versions = jiraIssues.getJSONObject(i).getJSONArray("versions");
+                for (int j = 0; j < versions.length(); j++) {
+                    affectVersions.add(versions.getJSONObject(j).getString("name"));
+                }
+
+                //comment
+                JSONArray comments = jiraIssues.getJSONObject(i).getJSONObject("comment").getJSONArray("comments");
+                for (int c = 0; c < comments.length(); c++) {
+                    comment = comments.getJSONObject(c).getString("body");
+                }
+
+                //only consider bugs that have affect versions
+                if (!affectVersions.isEmpty()){
+                    tickets.add(new JiraTicket(issueId, name, resolution,
+                            created, resolved, affectVersions, comment));
+                }
             }
         }
-
 
         return null;
     }

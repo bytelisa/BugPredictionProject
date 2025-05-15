@@ -1,5 +1,7 @@
 package org.example.entity;
 
+import java.util.List;
+
 public class JiraTicket {
 
 
@@ -19,18 +21,21 @@ public class JiraTicket {
     private String resolution;  //fixed
     private String creationDate;
     private String resolutionDate;
-    private String affectsVersions;
     private String fixVersions;
+    private List<String> affectVersions;
 
     public JiraTicket(){}
-    public JiraTicket(String id, String description, String name, boolean archived,
-                      boolean released, String releaseDate){
+
+    public JiraTicket(String id, String name,
+                      String resolution, String creationDate, String resolutionDate, List<String> affectV, String comment){
         this.issueId = id;
         this.name = name;
-        this.description = description;
-        this.archived = archived;
-        this.released = released;
-        this.releaseDate = releaseDate;
+        this.resolution = resolution;
+        this.creationDate = creationDate;
+        this.resolutionDate = resolutionDate;
+        this.description = comment;
+        this.affectVersions = affectV;
+
 
     }
     public JiraTicket(String id, String description, String status, String resolution,
@@ -124,12 +129,12 @@ public class JiraTicket {
         this.resolutionDate = resolutionDate;
     }
 
-    public String getAffectsVersions() {
-        return affectsVersions;
+    public List<String> getAffectVersions() {
+        return affectVersions;
     }
 
-    public void setAffectsVersions(String affectsVersions) {
-        this.affectsVersions = affectsVersions;
+    public void setAffectVersions(List<String> affectVersions) {
+        this.affectVersions = affectVersions;
     }
 
     public String getFixVersions() {
