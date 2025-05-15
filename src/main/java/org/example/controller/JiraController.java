@@ -9,6 +9,7 @@ import java.io.*;
 import java.net.URL;
 import java.nio.charset.Charset;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 
 
@@ -35,29 +36,32 @@ public class JiraController {
         // url directly filters tickets
         String url = "https://issues.apache.org/jira/rest/api/2/search?jql=project="    //basic rest api search
                 + projName +
-                "%20AND%20issuetype=Bug%20AND%20status%20in(Resolved,Closed)%20AND%20resolution=Fixed\n";   //required filters on tickets
+                "%20AND%20issuetype=Bug%20AND%20status%20in(Resolved,Closed)%20AND%20resolution=Fixed";   //required filters on tickets
 
         JSONObject json = readJsonFromUrl(url);
         JSONArray jiraIssues = json.getJSONArray("issues");
 
         for (i = 0; i < jiraIssues.length(); i++ ) {
+
             String name = "";
             String issueId = "";
             String resolution = "";
             String comment = "";
             List<String> affectVersions = new ArrayList<>();
             List<String> fixVersions = new ArrayList<>();
+            JSONObject issue = jiraIssues.getJSONObject(i);
+            JSONObject fields = issue.getJSONObject("fields");
 
-            JiraTicket ticket = new JiraTicket();
-            if(jiraIssues.getJSONObject(i).has("key") && (jiraIssues.getJSONObject(i).has("versions"))) {
+            //only consider bugs that have affect versions
+            if(jiraIssues.getJSONObject(i).has("key") && (fields.has("versions"))  && !fields.getJSONArray("versions").isEmpty()) {
 
                 //basic Jira Ticket fields
                 if (jiraIssues.getJSONObject(i).has("key"))
                     issueId = jiraIssues.getJSONObject(i).get("key").toString();
-                if (jiraIssues.getJSONObject(i).has("fields.status.name"))
-                    name = jiraIssues.getJSONObject(i).getJSONObject("status").getString("name");
-                if (jiraIssues.getJSONObject(i).has("resolution") && !jiraIssues.getJSONObject(i).isNull("resolution")) {
-                    resolution = jiraIssues.getJSONObject(i).getJSONObject("resolution").getString("name");
+                if (fields.has("status"))
+                    name = fields.getJSONObject("status").getString("name");
+                if (jiraIssues.getJSONObject(i).has("resolution") && !fields.isNull("resolution")) {
+                    resolution = fields.getJSONObject("resolution").getString("name");
                 }
 
                 /*creation and resolution date of the issue
@@ -72,40 +76,38 @@ public class JiraController {
                  */
 
                 // Affect versions
-
-                JSONArray versions = jiraIssues.getJSONObject(i).getJSONArray("versions");
+                JSONArray versions = fields.getJSONArray("versions");
                 for (int j = 0; j < versions.length(); j++) {
                     affectVersions.add(versions.getJSONObject(j).getString("name"));
                 }
 
                 // Fix versions
-                JSONArray fVersions = jiraIssues.getJSONObject(i).getJSONArray("fixVersions");
+                JSONArray fVersions = fields.getJSONArray("fixVersions");
                 for (int j = 0; j < fVersions.length(); j++) {
                     fixVersions.add(fVersions.getJSONObject(j).getString("name"));
                 }
 
                 //comment
-                JSONArray comments = jiraIssues.getJSONObject(i).getJSONObject("comment").getJSONArray("comments");
-                for (int c = 0; c < comments.length(); c++) {
-                    comment = comments.getJSONObject(c).getString("body");
+                if (fields.has("comment")) {
+                    JSONArray comments = fields.getJSONObject("comment").getJSONArray("comments");
+                    if (!comments.isEmpty()) {
+                        comment = comments.getJSONObject(0).getString("body"); // solo primo commento
+                    }
                 }
 
-                //only consider bugs that have affect versions
-                if (!affectVersions.isEmpty()){
-                    tickets.add(new JiraTicket(issueId, name, resolution
-                            , fixVersions, affectVersions, comment));
-                }
+                tickets.add(new JiraTicket(issueId, name, resolution, fixVersions, affectVersions, comment));
+
             }
         }
-        return null;
+        printTicketsToCSV();
+        return tickets;
     }
 
 
-    public void printTicketsToCSV(){
+    public static void printTicketsToCSV(){
 
-        int numTickets = tickets.size();
         int i;
-        String outname = projName + "VersionInfo.csv";
+        String outname = projName + "Tickets.csv";
         String dir = "src/main/outputFiles";
 
 
@@ -119,8 +121,6 @@ public class JiraController {
 
          */
 
-        if (tickets.size() < 6)
-            return;
         FileWriter fileWriter = null;
 
         try {
@@ -130,14 +130,15 @@ public class JiraController {
             fileWriter = new FileWriter(new File (dir, outname));
 
             //csv file columns
-            fileWriter.append("Index,Name,ResolutionStatus,CreationDate,ResolutionDate,Comment,AffectVersions");
+            fileWriter.append("Index,IssueID,Name,ResolutionStatus,Comment,AffectVersions,FixVersions");
             fileWriter.append("\n");
 
 
-            for ( i = 0; i <= tickets.size(); i++) {
+            for ( i = 0; i < tickets.size(); i++) {
+                int index = i + 1;
+                System.out.println("printing " + tickets.get(i).getIssueId());
 
-                Integer index = i + 1;
-                fileWriter.append(index.toString());
+                fileWriter.append(Integer.toString(index));
                 fileWriter.append(",");
                 fileWriter.append(tickets.get(i).getIssueId());
                 fileWriter.append(",");
@@ -145,14 +146,12 @@ public class JiraController {
                 fileWriter.append(",");
                 fileWriter.append(tickets.get(i).getResolution());
                 fileWriter.append(",");
-                fileWriter.append(tickets.get(i).getCreationDate());
-                fileWriter.append(",");
-                fileWriter.append(tickets.get(i).getResolutionDate());
-                fileWriter.append(",");
                 fileWriter.append(tickets.get(i).getDescription());
                 fileWriter.append(",");
                 fileWriter.append(tickets.get(i).getAffectVersions().toString());
                 fileWriter.append(",");
+                fileWriter.append(tickets.get(i).getFixVersions().toString());
+                fileWriter.append("\n");
             }
 
         } catch (Exception e) {

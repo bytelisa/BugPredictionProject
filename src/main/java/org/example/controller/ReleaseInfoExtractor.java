@@ -64,6 +64,7 @@ public class ReleaseInfoExtractor {
 
         if (releases.size() < 6)
             return;
+
         FileWriter fileWriter = null;
 
         try {
@@ -106,8 +107,6 @@ public class ReleaseInfoExtractor {
                 e.printStackTrace();
             }
         }
-        return;
-
     }
 
 
