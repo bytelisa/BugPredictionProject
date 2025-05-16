@@ -56,11 +56,11 @@ public class JiraController {
             if(jiraIssues.getJSONObject(i).has("key") && (fields.has("versions"))  && !fields.getJSONArray("versions").isEmpty()) {
 
                 //basic Jira Ticket fields
+                if (jiraIssues.getJSONObject(i).has("id"))
+                    issueId = jiraIssues.getJSONObject(i).get("id").toString();
                 if (jiraIssues.getJSONObject(i).has("key"))
-                    issueId = jiraIssues.getJSONObject(i).get("key").toString();
-                if (fields.has("status"))
-                    name = fields.getJSONObject("status").getString("name");
-                if (jiraIssues.getJSONObject(i).has("resolution") && !fields.isNull("resolution")) {
+                    name = jiraIssues.getJSONObject(i).get("key").toString();
+                if (fields.has("resolution") && !fields.isNull("resolution")) {
                     resolution = fields.getJSONObject("resolution").getString("name");
                 }
 
@@ -130,13 +130,15 @@ public class JiraController {
             fileWriter = new FileWriter(new File (dir, outname));
 
             //csv file columns
-            fileWriter.append("Index,IssueID,Name,ResolutionStatus,Comment,AffectVersions,FixVersions");
+            fileWriter.append("Index,IssueID,Name,ResolutionStatus,AffectVersions,FixVersions");
             fileWriter.append("\n");
 
 
             for ( i = 0; i < tickets.size(); i++) {
                 int index = i + 1;
-                System.out.println("printing " + tickets.get(i).getIssueId());
+                //System.out.println("printing " + tickets.get(i).getIssueId());
+
+                //todo check why comment is empty
 
                 fileWriter.append(Integer.toString(index));
                 fileWriter.append(",");
@@ -145,8 +147,6 @@ public class JiraController {
                 fileWriter.append(tickets.get(i).getName());
                 fileWriter.append(",");
                 fileWriter.append(tickets.get(i).getResolution());
-                fileWriter.append(",");
-                fileWriter.append(tickets.get(i).getDescription());
                 fileWriter.append(",");
                 fileWriter.append(tickets.get(i).getAffectVersions().toString());
                 fileWriter.append(",");

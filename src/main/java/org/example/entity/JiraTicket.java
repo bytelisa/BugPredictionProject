@@ -37,7 +37,7 @@ public class JiraTicket {
         this.affectVersions = affectV;
     }
 
-    //todo DUBBIO: come trovo IV senza sapere la data?
+    //todo DUBBIO: come trovo IV senza sapere la data? Risposta: usa metodo proportion (?)
     public JiraTicket(String id, String name,
                       String resolution, List<String> fixV, List<String> affectV, String comment){
         this.issueId = id;
