@@ -1,0 +1,50 @@
+package org.example.entity;
+
+import java.util.Date;
+
+public class Commit {
+
+    String commitID;
+    String author;
+    Date date;
+    String message;
+
+    public Commit(String id, String name, Date date, String mess){
+        this.commitID=id;
+        this.author = name;
+        this.date = date;
+        this.message = mess;
+    }
+
+    public String getCommitID() {
+        return commitID;
+    }
+
+    public void setCommitID(String commitID) {
+        this.commitID = commitID;
+    }
+
+    public String getAuthor() {
+        return author;
+    }
+
+    public void setAuthor(String author) {
+        this.author = author;
+    }
+
+    public String getDate() {
+        return date.toString();
+    }
+
+    public void setDate(Date date) {
+        this.date = date;
+    }
+
+    public String getMessage() {
+        return message;
+    }
+
+    public void setMessage(String message) {
+        this.message = message;
+    }
+}

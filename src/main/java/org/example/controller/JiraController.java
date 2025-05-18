@@ -56,7 +56,7 @@ public class JiraController {
             //only consider bugs that have affect versions
             if(jiraIssues.getJSONObject(i).has("key") && (fields.has("versions"))  && !fields.getJSONArray("versions").isEmpty()) {
 
-                //basic Jira Ticket fields
+                //get basic Jira Ticket fields
                 if (jiraIssues.getJSONObject(i).has("id"))
                     issueId = jiraIssues.getJSONObject(i).get("id").toString();
                 if (jiraIssues.getJSONObject(i).has("key"))
@@ -125,7 +125,6 @@ public class JiraController {
         FileWriter fileWriter = null;
 
         try {
-            fileWriter = null;
 
             //Name of CSV for output, directory where it will be saved
             fileWriter = new FileWriter(new File (dir, outname));
@@ -137,7 +136,6 @@ public class JiraController {
 
             for ( i = 0; i < tickets.size(); i++) {
                 int index = i + 1;
-                //System.out.println("printing " + tickets.get(i).getIssueId());
 
                 //todo check why comment is empty
 
