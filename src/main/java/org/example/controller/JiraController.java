@@ -32,7 +32,6 @@ public class JiraController {
         tickets = new ArrayList<>();
         int i;
 
-        //todo FIX QUESTO CON RIFERIMENTO A GETTICKETSID del professore -> mi serve resolution date, questo è inoltre troppo complesso
 
         //url directly filters tickets
         String url = "https://issues.apache.org/jira/rest/api/2/search?jql=project="    //basic rest api search

@@ -7,6 +7,7 @@ import org.json.JSONObject;
 import java.io.*;
 import java.net.URL;
 import java.nio.charset.Charset;
+import java.nio.charset.StandardCharsets;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
@@ -23,7 +24,6 @@ public class ReleaseInfoExtractor {
     private static HashMap<LocalDateTime, String> releaseNames;
     private static HashMap<LocalDateTime, String> releaseID;
     private static ArrayList<LocalDateTime> releases;
-    private static Integer numVersions;
 
     public static void extractReleases() throws IOException, JSONException {
 
@@ -35,7 +35,7 @@ public class ReleaseInfoExtractor {
         releaseNames = new HashMap<>();
         releaseID = new HashMap<>();
 
-        Integer i;
+        int i;
         String url = "https://issues.apache.org/jira/rest/api/2/project/" + projName;
 
         JSONObject json = readJsonFromUrl(url);
@@ -65,10 +65,9 @@ public class ReleaseInfoExtractor {
         if (releases.size() < 6)
             return;
 
-        FileWriter fileWriter = null;
+        FileWriter fileWriter= null;
 
         try {
-            fileWriter = null;
 
             //output file and its directory
             String outname = projName + "VersionInfo.csv";
@@ -79,7 +78,6 @@ public class ReleaseInfoExtractor {
             //csv file columns
             fileWriter.append("Index,Version ID,Version Name,Date");
             fileWriter.append("\n");
-            numVersions = releases.size();
 
             //do not consider the last 66% of releases
             for ( i = 0; i <= ((releases.size() *33)/100); i++) {
@@ -122,10 +120,9 @@ public class ReleaseInfoExtractor {
 
     public static JSONObject readJsonFromUrl(String url) throws IOException, JSONException {
         try (InputStream is = new URL(url).openStream()) {
-            BufferedReader rd = new BufferedReader(new InputStreamReader(is, Charset.forName("UTF-8")));
+            BufferedReader rd = new BufferedReader(new InputStreamReader(is, StandardCharsets.UTF_8));
             String jsonText = readAll(rd);
-            JSONObject json = new JSONObject(jsonText);
-            return json;
+            return new JSONObject(jsonText);
         }
     }
 
