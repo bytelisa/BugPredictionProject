@@ -1,6 +1,7 @@
 package org.example.controller;
 
 import org.example.entity.JiraTicket;
+import org.example.util.ConfigurationManager;
 import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
@@ -23,12 +24,13 @@ public class JiraController {
     */
 
     private static List<JiraTicket> tickets;
-    private static String projName ="OPENJPA";
+    private static String projName;
 
 
     public static List<JiraTicket> extractTicketList() throws IOException {
         //extracts all tickets regarding the release identified by releaseID
 
+        projName = ConfigurationManager.getInstance().getProperty("project.name");
         tickets = new ArrayList<>();
         int i;
 
