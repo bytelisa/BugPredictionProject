@@ -1,5 +1,7 @@
 package org.example.controller;
 
+import org.example.util.ConfigurationManager;
+import org.example.util.Printer;
 import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
@@ -27,7 +29,7 @@ public class ReleaseInfoExtractor {
 
     public static void extractReleases() throws IOException, JSONException {
 
-        String projName ="OPENJPA";
+        String projName = ConfigurationManager.getInstance().getProperty("project.name");
 
         //Fills the arraylist with releases dates and orders them
         //Ignores releases with missing dates
@@ -93,7 +95,7 @@ public class ReleaseInfoExtractor {
             }
 
         } catch (Exception e) {
-            System.out.println("Error in csv writer");
+            Printer.println("Error in csv writer");
             e.printStackTrace();
         } finally {
             try {
@@ -101,7 +103,7 @@ public class ReleaseInfoExtractor {
                 fileWriter.flush();
                 fileWriter.close();
             } catch (IOException e) {
-                System.out.println("Error while flushing/closing fileWriter !!!");
+                Printer.println("Error while flushing/closing fileWriter !!!");
                 e.printStackTrace();
             }
         }
