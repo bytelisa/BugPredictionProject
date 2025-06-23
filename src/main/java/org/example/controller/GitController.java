@@ -4,29 +4,36 @@ import org.eclipse.jgit.api.errors.GitAPIException;
 import org.eclipse.jgit.lib.Repository;
 import org.eclipse.jgit.revwalk.RevCommit;
 import org.eclipse.jgit.storage.file.FileRepositoryBuilder;
+import org.example.util.ConfigurationManager;
+import org.example.util.Printer;
 import org.example.entity.Commit;
 
 import java.io.File;
 import java.io.FileWriter;
 import java.io.IOException;
+import java.io.InputStream;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Properties;
 
 public class GitController {
 
     /* class responsibility: uses JGit to access and manage Git repositories */
-    public static String projName = "OPENJPA";
+    private static String projName;
+
+
     public static void commitExtractor() {
 
-        List<Commit> commitList = new ArrayList<>();
+        projName = ConfigurationManager.getInstance().getProperty("project.name");
 
-        //path to the local Git repository
-        String repoPath = "C:\\Users\\elisa\\Desktop\\Magistrale\\ISW2\\openjpa\\.git";
+        String gitPath = ConfigurationManager.getInstance().getProperty("git.path");
+
+        List<Commit> commitList = new ArrayList<>();
 
         try {
             //opens the repository
             FileRepositoryBuilder builder = new FileRepositoryBuilder();
-            Repository repository = builder.setGitDir(new File(repoPath))
+            Repository repository = builder.setGitDir(new File(gitPath))
                     .readEnvironment()
                     .findGitDir()
                     .build();
