@@ -2,6 +2,7 @@ package org.example.controller;
 
 import org.example.entity.JiraTicket;
 import org.example.util.ConfigurationManager;
+import org.example.util.Printer;
 import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
@@ -155,7 +156,7 @@ public class JiraController {
             }
 
         } catch (Exception e) {
-            System.out.println("Error in csv writer");
+            Printer.println("Error in csv writer");
             e.printStackTrace();
         } finally {
             try {
@@ -163,7 +164,7 @@ public class JiraController {
                 fileWriter.flush();
                 fileWriter.close();
             } catch (IOException e) {
-                System.out.println("Error while flushing/closing fileWriter !!!");
+                Printer.println("Error while flushing/closing fileWriter !!!");
                 e.printStackTrace();
             }
         }

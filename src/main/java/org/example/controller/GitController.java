@@ -96,7 +96,7 @@ public class GitController {
             }
 
         } catch (IOException e) {
-            System.out.println("Error in csv writer");
+            Printer.println("Error in csv writer");
             e.printStackTrace();
         } finally {
             try {
@@ -104,7 +104,7 @@ public class GitController {
                 fileWriter.flush();
                 fileWriter.close();
             } catch (IOException e) {
-                System.out.println("Error while flushing/closing fileWriter !!!");
+                Printer.println("Error while flushing/closing fileWriter !!!");
                 e.printStackTrace();
             }
         }

@@ -19,9 +19,10 @@ import java.util.HashMap;
 
 public class ReleaseInfoExtractor {
 
-    //class responsibility: extract data and write it onto csv files for it to be later analyzed by classifier
-    //ignore the last 66% of releases
-    //uses Jira Rest API to extract data regarding releases
+    /** Class responsibility: extract data and write it onto csv files for it to be later analyzed by classifier
+    * ignores the last 66% of releases
+    * uses Jira Rest API to extract data regarding releases
+    */
 
     private static HashMap<LocalDateTime, String> releaseNames;
     private static HashMap<LocalDateTime, String> releaseID;
