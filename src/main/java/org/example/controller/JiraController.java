@@ -6,9 +6,9 @@ import org.example.util.Printer;
 import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
-
 import java.io.*;
-import java.net.URL;
+import java.net.URI;
+import java.net.URISyntaxException;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.List;
@@ -16,7 +16,7 @@ import java.util.List;
 
 public class JiraController {
 
-    /* Extracts info about issues using the Jira Rest API
+    /** Extracts info about issues using the Jira Rest API.
 
     * bugs to be considered for the analysis:
     *       Jira tickets like [issuetype = Bug AND status in (Resolved, Closed) AND resolution = Fixed]
@@ -26,14 +26,14 @@ public class JiraController {
     private static String projName;
 
 
-    public static List<JiraTicket> extractTicketList() throws IOException, JSONException {
+    public static void extractTicketList() throws IOException, JSONException {
         //extracts all tickets regarding the release identified by releaseID
 
         projName = ConfigurationManager.getInstance().getProperty("project.name");
         List<JiraTicket> tickets = new ArrayList<>();
         int i = 0;
         int total;
-        int maxResults = 100; // Impostiamo il massimo per ridurre il numero di chiamate
+        int maxResults = 100;
 
         do {
 
@@ -45,11 +45,12 @@ public class JiraController {
                     projName, i, maxResults
             );
 
-            Printer.println("Fetching URL: " + url); // log for debug
+            //Printer.println("Fetching URL: " + url); // log for debug
 
 
             JSONObject json = readJsonFromUrl(url);
-            JSONArray jiraIssues = json.getJSONArray("issues");
+            JSONArray jiraIssues;
+            jiraIssues = json.getJSONArray("issues");
             total = json.getInt("total"); //total number of tickets that satisfy query
 
             parseIssues(jiraIssues, tickets); //auxiliary function for data extraction, reduces cognitive complexity of this method
@@ -58,7 +59,6 @@ public class JiraController {
 
         Printer.println("Total tickets fetched: " + tickets.size() + " (out of " + total + " reported by JIRA)");
         printTicketsToCSV(tickets);
-        return tickets;
     }
 
 
@@ -66,26 +66,10 @@ public class JiraController {
     private static void printTicketsToCSV(List<JiraTicket> tickets){
 
         int i;
-        String outname = projName + "Tickets.csv";
-        String dir = "src/main/outputFiles";
+        String outname = projName + "Tickets.csv";  //output file
+        String dir = "src/main/outputFiles";    //output directory
 
-
-        /* todo order tickets by date
-        tickets.sort(new Comparator<>() {
-            //@Override
-            public int compare(LocalDateTime o1, LocalDateTime o2) {
-                return o1.compareTo(o2);
-            }
-        });
-
-         */
-
-        FileWriter fileWriter = null;
-
-        try {
-
-            //Name of CSV for output, directory where it will be saved
-            fileWriter = new FileWriter(new File (dir, outname));
+        try (FileWriter fileWriter = new FileWriter(new File(dir, outname))) {
 
             //csv file columns
             fileWriter.append("Index,IssueID,Name,ResolutionStatus,AffectVersions,FixVersions");
@@ -105,7 +89,7 @@ public class JiraController {
                 fileWriter.append(",");
                 fileWriter.append(tickets.get(i).getResolution());
                 fileWriter.append(",");
-                fileWriter.append("\"").append(String.join(";", ticket.getAffectVersions())).append("\"");
+                fileWriter.append("\"").append(String.join(";", ticket.getAffectVersions())).append("\""); // not using commas because otherwise it will mess up the csv
                 fileWriter.append(",");
                 fileWriter.append("\"").append(String.join(";", ticket.getFixVersions())).append("\"");
                 fileWriter.append("\n");
@@ -113,14 +97,6 @@ public class JiraController {
 
         } catch (Exception e) {
             Printer.println("Error in csv writer");
-        } finally {
-            try {
-                assert fileWriter != null;
-                fileWriter.flush();
-                fileWriter.close();
-            } catch (IOException e) {
-                Printer.println("Error while flushing/closing fileWriter !!!");
-            }
         }
     }
 
@@ -180,11 +156,15 @@ public class JiraController {
 
 
     private static JSONObject readJsonFromUrl(String url) throws IOException, JSONException {
-        try (InputStream is = new URL(url).openStream()) {
+        JSONObject jsonObject = null;
+        try (InputStream is = new URI(url).toURL().openStream()) {
             BufferedReader rd = new BufferedReader(new InputStreamReader(is, StandardCharsets.UTF_8));
             String jsonText = readAll(rd);
-            return new JSONObject(jsonText);
+            jsonObject = new JSONObject(jsonText);
+        } catch (URISyntaxException e) {
+            Printer.errorPrint("Invalid url.");
         }
+        return jsonObject;
     }
 
     private static String readAll(Reader rd) throws IOException {
