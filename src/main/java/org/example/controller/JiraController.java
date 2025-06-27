@@ -45,7 +45,7 @@ public class JiraController {
                     projName, i, maxResults
             );
 
-            //Printer.println("Fetching URL: " + url); // log for debug
+            Printer.println("Fetching URL: " + url); // log for debug
 
 
             JSONObject json = readJsonFromUrl(url);
@@ -54,6 +54,8 @@ public class JiraController {
             total = json.getInt("total"); //total number of tickets that satisfy query
 
             parseIssues(jiraIssues, tickets); //auxiliary function for data extraction, reduces cognitive complexity of this method
+            // incremented in each iteration to fetch the next page.
+            i += jiraIssues.length();
 
         } while (i < total);
 
