@@ -7,13 +7,12 @@ import org.json.JSONException;
 import org.json.JSONObject;
 
 import java.io.*;
-import java.net.URL;
-import java.nio.charset.Charset;
+import java.net.URI;
+import java.net.URISyntaxException;
 import java.nio.charset.StandardCharsets;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.Comparator;
 import java.util.HashMap;
 
@@ -42,7 +41,8 @@ public class ReleaseInfoExtractor {
         String url = "https://issues.apache.org/jira/rest/api/2/project/" + projName;
 
         JSONObject json = readJsonFromUrl(url);
-        JSONArray versions = json.getJSONArray("versions");
+        JSONArray versions;
+        versions = json.getJSONArray("versions");
 
         for (i = 0; i < versions.length(); i++ ) {
             String name = "";
@@ -63,13 +63,12 @@ public class ReleaseInfoExtractor {
         if (releases.size() < 6)
             return;
 
-        FileWriter fileWriter= null;
+        //output file and its directory
+        String outname = projName + "VersionInfo.csv";
+        String dir = "src/main/outputFiles";
 
-        try {
+        try (FileWriter fileWriter = new FileWriter(new File(dir, outname))) {
 
-            //output file and its directory
-            String outname = projName + "VersionInfo.csv";
-            String dir = "src/main/outputFiles";
             int releasesToKeep = (int) Math.round(releases.size() * 0.34);
 
             if (releasesToKeep == 0) {
@@ -79,9 +78,6 @@ public class ReleaseInfoExtractor {
 
             Printer.println("Total releases found: " + releases.size());
             Printer.println("Keeping the first " + releasesToKeep + " releases (34%).");
-
-
-            fileWriter = new FileWriter(new File (dir, outname));
 
             //csv file columns
             fileWriter.append("Index,Version ID,Version Name,Date");
@@ -102,15 +98,6 @@ public class ReleaseInfoExtractor {
 
         } catch (Exception e) {
             Printer.println("Error in csv writer");
-        } finally {
-            try {
-                assert fileWriter != null;
-                fileWriter.flush();
-                fileWriter.close();
-
-            } catch (IOException e) {
-                Printer.println("Error while flushing/closing fileWriter !!!");
-            }
         }
     }
 
@@ -126,11 +113,15 @@ public class ReleaseInfoExtractor {
 
 
     public static JSONObject readJsonFromUrl(String url) throws IOException, JSONException {
-        try (InputStream is = new URL(url).openStream()) {
+        JSONObject jsonObj = null;
+        try (InputStream is = new URI(url).toURL().openStream()) {
             BufferedReader rd = new BufferedReader(new InputStreamReader(is, StandardCharsets.UTF_8));
             String jsonText = readAll(rd);
-            return new JSONObject(jsonText);
+            jsonObj = new JSONObject(jsonText);
+        } catch (URISyntaxException e) {
+            Printer.println("Invalid url.");
         }
+        return jsonObj;
     }
 
     private static String readAll(Reader rd) throws IOException {
