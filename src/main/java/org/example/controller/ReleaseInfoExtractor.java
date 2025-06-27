@@ -58,12 +58,7 @@ public class ReleaseInfoExtractor {
         }
 
         // order releases by date
-        releases.sort(new Comparator<>() {
-            //@Override
-            public int compare(LocalDateTime o1, LocalDateTime o2) {
-                return o1.compareTo(o2);
-            }
-        });
+        releases.sort(Comparator.naturalOrder());
 
         if (releases.size() < 6)
             return;
@@ -75,6 +70,16 @@ public class ReleaseInfoExtractor {
             //output file and its directory
             String outname = projName + "VersionInfo.csv";
             String dir = "src/main/outputFiles";
+            int releasesToKeep = (int) Math.round(releases.size() * 0.34);
+
+            if (releasesToKeep == 0) {
+                Printer.println("Not enough releases to process.");
+                return;
+            }
+
+            Printer.println("Total releases found: " + releases.size());
+            Printer.println("Keeping the first " + releasesToKeep + " releases (34%).");
+
 
             fileWriter = new FileWriter(new File (dir, outname));
 
@@ -83,7 +88,7 @@ public class ReleaseInfoExtractor {
             fileWriter.append("\n");
 
             //do not consider the last 66% of releases
-            for ( i = 0; i <= ((releases.size() *33)/100); i++) {
+            for ( i = 0; i <= releasesToKeep; i++) {
                 int index = i + 1;
                 fileWriter.append(Integer.toString(index));
                 fileWriter.append(",");
@@ -97,15 +102,14 @@ public class ReleaseInfoExtractor {
 
         } catch (Exception e) {
             Printer.println("Error in csv writer");
-            e.printStackTrace();
         } finally {
             try {
                 assert fileWriter != null;
                 fileWriter.flush();
                 fileWriter.close();
+
             } catch (IOException e) {
                 Printer.println("Error while flushing/closing fileWriter !!!");
-                e.printStackTrace();
             }
         }
     }
