@@ -10,6 +10,7 @@ import org.json.JSONObject;
 import java.io.*;
 import java.net.URL;
 import java.nio.charset.Charset;
+import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
@@ -46,73 +47,15 @@ public class JiraController {
                     projName, i, maxResults
             );
 
-            Printer.println("Fetching URL: " + url); // Log for debug
+            Printer.println("Fetching URL: " + url); // log for debug
 
 
             JSONObject json = readJsonFromUrl(url);
             JSONArray jiraIssues = json.getJSONArray("issues");
             total = json.getInt("total"); //total number of tickets that satisfy query
 
-            //extract issues for each page
-            for (int j = 0; j < jiraIssues.length(); j++ ) {
+            parseIssues(jiraIssues, tickets); //auxiliary function for data extraction, reduces cognitive complexity of this method
 
-                String name = "";
-                String issueId = "";
-                String resolution = "";
-                String comment = "";
-                List<String> affectVersions = new ArrayList<>();
-                List<String> fixVersions = new ArrayList<>();
-                JSONObject issue = jiraIssues.getJSONObject(j);
-                JSONObject fields = issue.getJSONObject("fields");
-
-                //only consider bugs that have affect versions
-                if (jiraIssues.getJSONObject(j).has("key") && (fields.has("versions")) && !fields.getJSONArray("versions").isEmpty()) {
-
-                    //get basic Jira Ticket fields
-                    if (jiraIssues.getJSONObject(j).has("id"))
-                        issueId = jiraIssues.getJSONObject(j).get("id").toString();
-                    if (jiraIssues.getJSONObject(j).has("key"))
-                        name = jiraIssues.getJSONObject(j).get("key").toString();
-                    if (fields.has("resolution") && !fields.isNull("resolution")) {
-                        resolution = fields.getJSONObject("resolution").getString("name");
-                    }
-
-                    /*creation and resolution date of the issue
-                    if (jiraIssues.getJSONObject(i).has("created")){
-                        String created = jiraIssues.getJSONObject(j).get("created").toString();
-                    }
-
-                    if (jiraIssues.getJSONObject(j).has("resolutiondate")){
-                        String resolved = jiraIssues.getJSONObject(j).get("resolutiondate").toString();
-                    }
-
-                     */
-
-                    // Affect versions
-                    JSONArray versions = fields.getJSONArray("versions");
-                    for (int k = 0; k < versions.length(); k++) {
-                        affectVersions.add(versions.getJSONObject(k).getString("name"));
-                    }
-
-                    // Fix versions
-                    JSONArray fVersions = fields.getJSONArray("fixVersions");
-                    for (int k = 0; k < fVersions.length(); k++) {
-                        fixVersions.add(fVersions.getJSONObject(k).getString("name"));
-                    }
-
-                    //comment
-                    if (fields.has("comment")) {
-                        JSONArray comments = fields.getJSONObject("comment").getJSONArray("comments");
-                        if (!comments.isEmpty()) {
-                            comment = comments.getJSONObject(0).getString("body"); // solo primo commento
-                        }
-                    }
-
-                    tickets.add(new JiraTicket(issueId, name, resolution, fixVersions, affectVersions, comment));
-
-                }
-            }
-            i += jiraIssues.length();
         } while (i < total);
 
         Printer.println("Total tickets fetched: " + tickets.size() + " (out of " + total + " reported by JIRA)");
@@ -185,9 +128,91 @@ public class JiraController {
         }
     }
 
+
+
+    private static void parseIssues(JSONArray issues, List<JiraTicket> tickets) {
+
+        //parses a JSONArray of JIRA issues and turns them into JiraTicket objects
+
+        for (int i = 0; i < issues.length(); i++) {
+            JSONObject issue = issues.getJSONObject(i);
+            JSONObject fields = issue.getJSONObject("fields");
+
+            //todo controlla affect version successivamente, per ora stai estraendo e basta
+
+            if (issue.has("key")) {
+                String issueId = issue.getString("id");
+                String name = issue.getString("key");
+                String resolution = fields.has("resolution") && !fields.isNull("resolution")
+                        ? fields.getJSONObject("resolution").getString("name")
+                        : "";
+
+                List<String> affectVersions = parseVersions(fields, "versions");
+                List<String> fixVersions = parseVersions(fields, "fixVersions");
+
+                String comment = "";
+                if (fields.has("comment") && fields.getJSONObject("comment").has("comments")) {
+                    JSONArray comments = fields.getJSONObject("comment").getJSONArray("comments");
+                    if (!comments.isEmpty()) {
+                        comment = comments.getJSONObject(0).optString("body", ""); // Get first comment's body
+                    }
+                }
+
+                tickets.add(new JiraTicket(issueId, name, resolution, fixVersions, affectVersions, comment));
+            }
+        }
+    }
+
+    private static List<String> parseVersions(JSONObject fields, String versionType) {
+
+        //Helper method to parse version arrays from JIRA fields
+        List<String> parsedVersions = new ArrayList<>();
+
+        if (fields.has(versionType)) {
+            JSONArray versions = fields.getJSONArray(versionType);
+
+            for (int j = 0; j < versions.length(); j++) {
+                JSONObject version = versions.getJSONObject(j);
+
+                if (version.has("name")) {
+                    parsedVersions.add(version.getString("name"));
+                }
+            }
+        }
+        return parsedVersions;
+    }
+
+    public void printTicketsToCSV(List<JiraTicket> ticketsToPrint, String projName) {
+
+        String outname = projName + "Tickets.csv";
+        String dir = "outputFiles";
+
+        try (FileWriter fileWriter = new FileWriter(new File(dir, outname))) {
+
+            // CSV header
+            fileWriter.append("IssueID,Name,ResolutionStatus,AffectVersions,FixVersions\n");
+
+            for (JiraTicket ticket : ticketsToPrint) {
+                fileWriter.append(ticket.getIssueId());
+                fileWriter.append(",");
+                fileWriter.append(ticket.getName());
+                fileWriter.append(",");
+                fileWriter.append(ticket.getResolution());
+                fileWriter.append(",");
+                fileWriter.append("\"").append(String.join(";", ticket.getAffectVersions())).append("\"");
+                fileWriter.append(",");
+                fileWriter.append("\"").append(String.join(";", ticket.getFixVersions())).append("\"");
+                fileWriter.append("\n");
+            }
+        } catch (IOException e) {
+            Printer.println("Error writing tickets to CSV file: " + e.getMessage());
+        }
+    }
+
+
     private static JSONObject readJsonFromUrl(String url) throws IOException, JSONException {
         try (InputStream is = new URL(url).openStream()) {
-            BufferedReader rd = new BufferedReader(new InputStreamReader(is, Charset.forName("UTF-8")));
+            BufferedReader rd = new BufferedReader(new InputStreamReader(is, StandardCharsets.UTF_8));
             String jsonText = readAll(rd);
             return new JSONObject(jsonText);
         }
