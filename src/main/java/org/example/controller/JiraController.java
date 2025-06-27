@@ -9,10 +9,8 @@ import org.json.JSONObject;
 
 import java.io.*;
 import java.net.URL;
-import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.List;
 
 
@@ -96,7 +94,7 @@ public class JiraController {
 
             for ( i = 0; i < tickets.size(); i++) {
                 int index = i + 1;
-
+                JiraTicket ticket = tickets.get(i);
                 //todo check why comment is empty
 
                 fileWriter.append(Integer.toString(index));
@@ -107,15 +105,14 @@ public class JiraController {
                 fileWriter.append(",");
                 fileWriter.append(tickets.get(i).getResolution());
                 fileWriter.append(",");
-                fileWriter.append(tickets.get(i).getAffectVersions().toString());
+                fileWriter.append("\"").append(String.join(";", ticket.getAffectVersions())).append("\"");
                 fileWriter.append(",");
-                fileWriter.append(tickets.get(i).getFixVersions().toString());
+                fileWriter.append("\"").append(String.join(";", ticket.getFixVersions())).append("\"");
                 fileWriter.append("\n");
             }
 
         } catch (Exception e) {
             Printer.println("Error in csv writer");
-            e.printStackTrace();
         } finally {
             try {
                 assert fileWriter != null;
@@ -123,7 +120,6 @@ public class JiraController {
                 fileWriter.close();
             } catch (IOException e) {
                 Printer.println("Error while flushing/closing fileWriter !!!");
-                e.printStackTrace();
             }
         }
     }
@@ -180,33 +176,6 @@ public class JiraController {
             }
         }
         return parsedVersions;
-    }
-
-    public void printTicketsToCSV(List<JiraTicket> ticketsToPrint, String projName) {
-
-        String outname = projName + "Tickets.csv";
-        String dir = "outputFiles";
-
-        try (FileWriter fileWriter = new FileWriter(new File(dir, outname))) {
-
-            // CSV header
-            fileWriter.append("IssueID,Name,ResolutionStatus,AffectVersions,FixVersions\n");
-
-            for (JiraTicket ticket : ticketsToPrint) {
-                fileWriter.append(ticket.getIssueId());
-                fileWriter.append(",");
-                fileWriter.append(ticket.getName());
-                fileWriter.append(",");
-                fileWriter.append(ticket.getResolution());
-                fileWriter.append(",");
-                fileWriter.append("\"").append(String.join(";", ticket.getAffectVersions())).append("\"");
-                fileWriter.append(",");
-                fileWriter.append("\"").append(String.join(";", ticket.getFixVersions())).append("\"");
-                fileWriter.append("\n");
-            }
-        } catch (IOException e) {
-            Printer.println("Error writing tickets to CSV file: " + e.getMessage());
-        }
     }
 
 
