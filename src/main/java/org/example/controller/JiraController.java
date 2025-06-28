@@ -24,13 +24,15 @@ public class JiraController {
     */
 
     private String projName;
+    private List<JiraTicket> ticketList;
+
 
     public JiraController() {
         this.projName = ConfigurationManager.getInstance().getProperty("project.name");
     }
 
-    public void extractTicketList() throws IOException, JSONException {
-        //extracts all tickets regarding the release identified by releaseID
+
+    public List<JiraTicket> extractTicketList() throws IOException, JSONException {
 
         projName = ConfigurationManager.getInstance().getProperty("project.name");
         List<JiraTicket> tickets = new ArrayList<>();
@@ -64,6 +66,7 @@ public class JiraController {
 
         Printer.println("Total tickets fetched: " + tickets.size() + " (out of " + total + " reported by JIRA)");
         printTicketsToCSV(tickets);
+        return tickets;
     }
 
 

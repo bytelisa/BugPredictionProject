@@ -21,10 +21,9 @@ public class GitController {
     private String projName;
 
 
-    public void commitExtractor() {
+    public List<Commit> commitExtractor() {
 
         projName = ConfigurationManager.getInstance().getProperty("project.name");
-
         String gitPath = ConfigurationManager.getInstance().getProperty("git.path");
 
         List<Commit> commitList = new ArrayList<>();
@@ -54,6 +53,7 @@ public class GitController {
         } catch (IOException | GitAPIException e) {
             Printer.errorPrint("Error while extracting commits.");
         }
+        return commitList;
     }
 
     public void printCommitsToCSV(List<Commit> commits ){
