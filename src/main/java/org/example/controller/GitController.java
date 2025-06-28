@@ -100,13 +100,14 @@ public class GitController {
         }
     }
 
-    public List<GitTag> extractTags()throws GitAPIException, IOException {
+    public List<GitTag> extractTags() {
         List<GitTag> tags = new ArrayList<>();
-        List<Ref> call = this.git.tagList().call();
 
-        //we use a revwalk to get the commit date from the tag's id
-        try (RevWalk walk = new RevWalk(this.git.getRepository())) {
+        try {
+            List<Ref> call = this.git.tagList().call();
 
+            //we use a revwalk to get the commit date from the tag's id
+            RevWalk walk = new RevWalk(this.git.getRepository());
             for (Ref ref : call) {
 
                 RevCommit commit = walk.parseCommit(ref.getObjectId()); //commit associated with the tag
@@ -114,8 +115,33 @@ public class GitController {
 
                 tags.add(new GitTag(tagName, commit.getId(), commit.getAuthorIdent().getWhenAsInstant()));
             }
+        } catch (GitAPIException|IOException e) {
+            Printer.errorPrint("Error while extracting Tags from Git.");
         }
+        printTagsToCSV(tags);
         return tags;
+    }
+
+    private void printTagsToCSV(List<GitTag> tagList){
+
+        String outname = projName + "Tags.csv";  //output file
+        String dir = "src/main/outputFiles";    //output directory
+
+        try (FileWriter fileWriter = new FileWriter(new File (dir, outname))) {
+            for (GitTag tag: tagList) {
+                fileWriter.append(tag.getName());
+                fileWriter.append(",");
+                fileWriter.append(tag.getCommitId().toString());
+                fileWriter.append(",");
+                fileWriter.append(tag.getCommitDate().toString());
+                fileWriter.append(",");
+                fileWriter.append("\n");
+
+            }
+        } catch (IOException e){
+            Printer.errorPrint("Error printing Tags to CSV.");
+        }
+
     }
 
 }

@@ -1,6 +1,9 @@
 package org.example.controller;
 
+import org.eclipse.jgit.api.errors.GitAPIException;
+import org.eclipse.jgit.lib.ObjectId;
 import org.example.entity.Commit;
+import org.example.entity.GitTag;
 import org.example.entity.JiraTicket;
 import org.example.entity.Release;
 import org.example.util.ConfigurationManager;
@@ -40,7 +43,7 @@ public class DatasetProcessor {
             List<JiraTicket> tickets = jiraController.extractTicketList();
 
             GitController gitController = new GitController();
-            List<Commit> commits = gitController.commitExtractor();
+            List<Commit> commits = gitController.extractCommits();
 
             // link data
             Map<String, List<Commit>> ticketToCommitsMap = linkCommitsToJiraTickets(commits, tickets);
@@ -50,6 +53,10 @@ public class DatasetProcessor {
                     ticketToCommitsMap.size()
             ));
 
+           // Map<Release, List<Commit>> releaseCommits = partitionCommitsByRelease(releases, gitController);
+
+
+            List<GitTag> tagList = gitController.extractTags();
 
         } catch (IOException | JSONException e) {
             Printer.errorPrint("Somethimg went wrong while extracting data.");
@@ -64,7 +71,7 @@ public class DatasetProcessor {
                 .map(JiraTicket::getName)
                 .collect(Collectors.toSet());
 
-        Map<String, List<Commit>> ticketToCommitsMap = new HashMap<>();
+        Map<String, List<Commit>> ticketCommitsMap = new HashMap<>();
 
         for (Commit commit : commits) {
 
@@ -80,13 +87,13 @@ public class DatasetProcessor {
                     // If the key `ticketId` is not in the map, it creates a new ArrayList,
                     // puts it in the map, and then `add(commit)` is called on that new list.
                     // If the key is already there, it simply gets the existing list and adds the commit.
-                    ticketToCommitsMap.computeIfAbsent(ticketId, k -> new ArrayList<>()).add(commit);
+                    ticketCommitsMap.computeIfAbsent(ticketId, k -> new ArrayList<>()).add(commit);
                 }
             }
         }
-        dumpLinkingResults(ticketToCommitsMap, this.projName);
+        dumpLinkingResults(ticketCommitsMap, this.projName);
 
-        return ticketToCommitsMap;
+        return ticketCommitsMap;
     }
 
 
@@ -121,5 +128,60 @@ public class DatasetProcessor {
         Printer.println("Linking validation results saved to: " + dir + "/" + outname);
     }
 
+
+//    /**
+//     * Associates commits with their respective releases by matching JIRA releases to Git tags
+//     * and partitioning the commit history.
+//     *
+//     * @param jiraReleases The list of releases from JIRA.
+//     * @param gitController An instance of the GitController to interact with the repository.
+//     * @return A map where each Release is a key for a list of Commits in that release cycle.
+//     */
+//    private Map<Release, List<Commit>> partitionCommitsByRelease(List<Release> jiraReleases, GitController gitController) throws IOException, GitAPIException {
+//
+//        //matches Git tags to releases extracted by Jira
+//
+//        List<GitTag> allTags = gitController.extractTags();
+//        Map<Release, List<Commit>> releaseCommits = new LinkedHashMap<>(); // LinkedHashMap preserves insertion order
+//
+//        // 1. Match JIRA Releases to Git Tags (Heuristic Matching)
+//        List<Pair<Release, GitTag>> matchedPairs = new ArrayList<>();
+//        for (Release release : jiraReleases) {
+//
+//            // CAP-COMMENT: (HEURISTIC MATCHING) This is a simple but common heuristic.
+//            // It finds a tag whose name is contained within the JIRA release name, or vice versa.
+//            // E.g., JIRA "Version 2.1.0" matches Git tag "2.1.0".
+//            // This can be made more robust if needed (e.g., by normalizing numbers).
+//
+//            allTags.stream()
+//                    .filter(tag -> release.getName().contains(tag.getName()) || tag.getName().contains(release.getName()))
+//                    .findFirst()
+//                    .ifPresent(tag -> matchedPairs.add(new Pair<>(release, tag)));
+//        }
+//
+//        // 2. Sort matched pairs by the commit date of the tag to ensure chronological order.
+//        matchedPairs.sort(Comparator.comparing(p -> p.getValue().getCommitDate()));
+//
+//        // 3. Partition Commits using git log ranges
+//        ObjectId previousReleaseCommitId = null;
+//        for (Pair<Release, GitTag> pair : matchedPairs) {
+//            Release currentRelease = pair.getKey();
+//            ObjectId currentReleaseCommitId = pair.getValue().getCommitId();
+//
+//            List<Commit> commitsInReleaseCycle;
+//            if (previousReleaseCommitId == null) {
+//                // First release: get all commits from the beginning up to this release's tag.
+//                commitsInReleaseCycle = gitController.getCommitsInRange(null, currentReleaseCommitId);
+//            } else {
+//                // Subsequent releases: get commits between the last release's tag and this one's.
+//                commitsInReleaseCycle = gitController.getCommitsInRange(previousReleaseCommitId, currentReleaseCommitId);
+//            }
+//
+//            releaseCommits.put(currentRelease, commitsInReleaseCycle);
+//            previousReleaseCommitId = currentReleaseCommitId;
+//        }
+//
+//        return releaseCommits;
+//    }
 
 }

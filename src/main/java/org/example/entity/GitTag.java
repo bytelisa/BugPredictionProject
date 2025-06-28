@@ -14,7 +14,7 @@ public class GitTag {
         this.commitDate = commitDate;
     }
 
-    // Add getters for all fields...
+
     public String getName() { return name; }
     public ObjectId getCommitId() { return commitId; }
     public Instant getCommitDate() { return commitDate; }
