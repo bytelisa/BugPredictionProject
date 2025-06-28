@@ -1,5 +1,6 @@
 package org.example.controller;
 
+import org.example.entity.Release;
 import org.example.util.ConfigurationManager;
 import org.example.util.Printer;
 import org.json.JSONArray;
@@ -14,6 +15,7 @@ import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.HashMap;
+import java.util.List;
 
 public class ReleaseInfoExtractor {
 
@@ -25,8 +27,9 @@ public class ReleaseInfoExtractor {
     private HashMap<LocalDateTime, String> releaseNames;
     private HashMap<LocalDateTime, String> releaseID;
     private ArrayList<LocalDateTime> releases;
+    private List<Release> releaseList;
 
-    public void extractReleases() throws IOException, JSONException {
+    public List<Release> extractReleases() throws IOException, JSONException {
 
         String projName = ConfigurationManager.getInstance().getProperty("project.name");
 
@@ -35,6 +38,9 @@ public class ReleaseInfoExtractor {
         releases = new ArrayList<>();
         releaseNames = new HashMap<>();
         releaseID = new HashMap<>();
+        releaseList = new ArrayList<>();
+
+        //todo eliminare queste tre liste inutili per sostituirle definitivamente con la lista di release releaselist
 
         int i;
         String url = "https://issues.apache.org/jira/rest/api/2/project/" + projName;
@@ -46,21 +52,23 @@ public class ReleaseInfoExtractor {
         for (i = 0; i < versions.length(); i++ ) {
             String name = "";
             String id = "";
+            LocalDate date;
+
             if(versions.getJSONObject(i).has("releaseDate")) {
                 if (versions.getJSONObject(i).has("name"))
                     name = versions.getJSONObject(i).get("name").toString();
                 if (versions.getJSONObject(i).has("id"))
                     id = versions.getJSONObject(i).get("id").toString();
+                date = LocalDate.parse(versions.getJSONObject(i).get("releaseDate").toString());
                 addRelease(versions.getJSONObject(i).get("releaseDate").toString(),
                         name,id);
+                releaseList.add(new Release(id, name, date));
             }
         }
 
         // order releases by date
         releases.sort(Comparator.naturalOrder());
 
-        if (releases.size() < 6)
-            return;
 
         //output file and its directory
         String outname = projName + "VersionInfo.csv";
@@ -72,7 +80,7 @@ public class ReleaseInfoExtractor {
 
             if (releasesToKeep == 0) {
                 Printer.println("Not enough releases to process.");
-                return;
+                return null;
             }
 
             Printer.println("Total releases found: " + releases.size());
@@ -98,6 +106,7 @@ public class ReleaseInfoExtractor {
         } catch (Exception e) {
             Printer.println("Error in csv writer");
         }
+        return releaseList;
     }
 
 
