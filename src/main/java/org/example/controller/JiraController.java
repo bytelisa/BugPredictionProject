@@ -41,7 +41,6 @@ public class JiraController {
         int maxResults = 100;
 
         do {
-
             //url directly filters tickets using jira rest api
             String url = String.format(
                     "https://issues.apache.org/jira/rest/api/2/search?jql=project=%s" +
@@ -68,7 +67,6 @@ public class JiraController {
         printTicketsToCSV(tickets);
         return tickets;
     }
-
 
 
     private void printTicketsToCSV(List<JiraTicket> tickets){
@@ -109,7 +107,6 @@ public class JiraController {
     }
 
 
-
     private void parseIssues(JSONArray issues, List<JiraTicket> tickets) {
 
         //parses a JSONArray of JIRA issues and turns them into JiraTicket objects
@@ -143,6 +140,7 @@ public class JiraController {
         }
     }
 
+
     private List<String> parseVersions(JSONObject fields, String versionType) {
 
         //Helper method to parse version arrays from JIRA fields
@@ -174,6 +172,7 @@ public class JiraController {
         }
         return jsonObject;
     }
+
 
     private String readAll(Reader rd) throws IOException {
         StringBuilder sb = new StringBuilder();
