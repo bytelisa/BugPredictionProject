@@ -84,7 +84,7 @@ public class ReleaseInfoExtractor {
             fileWriter.append("\n");
 
             //do not consider the last 66% of releases
-            for ( i = 0; i <= releasesToKeep; i++) {
+            for ( i = 0; i < releasesToKeep; i++) {
                 int index = i + 1;
                 fileWriter.append(Integer.toString(index));
                 fileWriter.append(",");
@@ -119,7 +119,7 @@ public class ReleaseInfoExtractor {
             String jsonText = readAll(rd);
             jsonObj = new JSONObject(jsonText);
         } catch (URISyntaxException e) {
-            Printer.println("Invalid url.");
+            Printer.errorPrint("Invalid url.");
         }
         return jsonObj;
     }
