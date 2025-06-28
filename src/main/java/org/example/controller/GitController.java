@@ -1,4 +1,5 @@
 package org.example.controller;
+
 import org.eclipse.jgit.api.Git;
 import org.eclipse.jgit.api.errors.GitAPIException;
 import org.eclipse.jgit.lib.Repository;
@@ -7,14 +8,12 @@ import org.eclipse.jgit.storage.file.FileRepositoryBuilder;
 import org.example.util.ConfigurationManager;
 import org.example.util.Printer;
 import org.example.entity.Commit;
-
 import java.io.File;
 import java.io.FileWriter;
 import java.io.IOException;
-import java.io.InputStream;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Properties;
+
 
 public class GitController {
 
@@ -46,7 +45,7 @@ public class GitController {
 
                     //create new commit and add it to the list of commits
                     commitList.add(new Commit(commit.getName(), commit.getAuthorIdent().getName(),
-                            commit.getAuthorIdent().getWhen(), commit.getShortMessage()));
+                            commit.getAuthorIdent().getWhenAsInstant(), commit.getShortMessage()));
                     /*
                     System.out.println("Commit: " + commit.getName());
                     System.out.println("Author: " + commit.getAuthorIdent().getName());
@@ -60,7 +59,7 @@ public class GitController {
                 printCommitsToCSV(commitList);
             }
         } catch (IOException | GitAPIException e) {
-            e.printStackTrace();
+            Printer.errorPrint("Error while extracting commits.");
         }
     }
 
@@ -70,10 +69,7 @@ public class GitController {
         String outname = projName + "Commits.csv";
         String dir = "src/main/outputFiles";
 
-        FileWriter fileWriter = null;
-
-        try {
-            fileWriter = new FileWriter(new File (dir, outname));
+        try (FileWriter fileWriter = new FileWriter(new File (dir, outname))) {
 
             //csv file columns
             fileWriter.append("Commit,Author,Date,Message");
@@ -97,18 +93,7 @@ public class GitController {
 
         } catch (IOException e) {
             Printer.println("Error in csv writer");
-            e.printStackTrace();
-        } finally {
-            try {
-                assert fileWriter != null;
-                fileWriter.flush();
-                fileWriter.close();
-            } catch (IOException e) {
-                Printer.println("Error while flushing/closing fileWriter !!!");
-                e.printStackTrace();
-            }
         }
-
     }
 
 
