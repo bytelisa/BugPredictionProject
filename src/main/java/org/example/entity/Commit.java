@@ -1,15 +1,15 @@
 package org.example.entity;
 
-import java.util.Date;
+import java.time.Instant;
 
 public class Commit {
 
     String commitID;
     String author;
-    Date date;
+    Instant date;
     String message;
 
-    public Commit(String id, String name, Date date, String mess){
+    public Commit(String id, String name, Instant date, String mess){
         this.commitID=id;
         this.author = name;
         this.date = date;
@@ -36,7 +36,7 @@ public class Commit {
         return date.toString();
     }
 
-    public void setDate(Date date) {
+    public void setDate(Instant date) {
         this.date = date;
     }
 
