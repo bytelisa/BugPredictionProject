@@ -5,6 +5,7 @@ import org.eclipse.jgit.api.errors.GitAPIException;
 import org.eclipse.jgit.lib.Repository;
 import org.eclipse.jgit.revwalk.RevCommit;
 import org.eclipse.jgit.storage.file.FileRepositoryBuilder;
+import org.example.entity.GitTag;
 import org.example.util.ConfigurationManager;
 import org.example.util.Printer;
 import org.example.entity.Commit;
@@ -13,15 +14,22 @@ import java.io.FileWriter;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
-
+import org.eclipse.jgit.lib.Ref;
+import org.eclipse.jgit.revwalk.RevCommit;
+import org.eclipse.jgit.revwalk.RevWalk;
 
 public class GitController {
 
     /* class responsibility: uses JGit to access and manage Git repositories */
     private String projName;
+    private final Git git; // Assume Git object is now an instance field, initialized in constructor
+
+    public GitController(Git git) {
+        this.git = git;
+    }
 
 
-    public List<Commit> commitExtractor() {
+    public List<Commit> extractCommits() {
 
         projName = ConfigurationManager.getInstance().getProperty("project.name");
         String gitPath = ConfigurationManager.getInstance().getProperty("git.path");
@@ -42,7 +50,7 @@ public class GitController {
 
                 for (RevCommit commit : commits) {
 
-                    //create new commit and add it to the list of commits
+                    //create new Commit and add it to the list of commits
                     commitList.add(new Commit(commit.getName(), commit.getAuthorIdent().getName(),
                             commit.getAuthorIdent().getWhenAsInstant(), commit.getFullMessage()));
 
@@ -92,5 +100,22 @@ public class GitController {
         }
     }
 
+    public List<GitTag> extractTags()throws GitAPIException, IOException {
+        List<GitTag> tags = new ArrayList<>();
+        List<Ref> call = this.git.tagList().call();
+
+        //we use a revwalk to get the commit date from the tag's ObjectId
+        try (RevWalk walk = new RevWalk(this.git.getRepository())) {
+
+            for (Ref ref : call) {
+
+                RevCommit commit = walk.parseCommit(ref.getObjectId()); //commit associated with the tag
+                String tagName = ref.getName().replace("refs/tags/", ""); //tag name cleanup
+
+                tags.add(new GitTag(tagName, commit.getId(), commit.getAuthorIdent().getWhenAsInstant()));
+            }
+        }
+        return tags;
+    }
 
 }
