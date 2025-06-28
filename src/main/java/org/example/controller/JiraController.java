@@ -23,15 +23,18 @@ public class JiraController {
     * bugs to be excluded: bugs without an affect version (pre-release), bugs devoid of related fix commit on git
     */
 
-    private static String projName;
+    private String projName;
 
+    public JiraController() {
+        this.projName = ConfigurationManager.getInstance().getProperty("project.name");
+    }
 
-    public static void extractTicketList() throws IOException, JSONException {
+    public void extractTicketList() throws IOException, JSONException {
         //extracts all tickets regarding the release identified by releaseID
 
         projName = ConfigurationManager.getInstance().getProperty("project.name");
         List<JiraTicket> tickets = new ArrayList<>();
-        int i = 0;
+        int startPage = 0;
         int total;
         int maxResults = 100;
 
@@ -42,7 +45,7 @@ public class JiraController {
                     "https://issues.apache.org/jira/rest/api/2/search?jql=project=%s" +
                             "%%20AND%%20issuetype=Bug%%20AND%%20status%%20in(Resolved,Closed)%%20AND%%20resolution=Fixed" +
                             "&startAt=%d&maxResults=%d",
-                    projName, i, maxResults
+                    projName, startPage, maxResults
             );
 
             Printer.println("Fetching URL: " + url); // log for debug
@@ -55,9 +58,9 @@ public class JiraController {
 
             parseIssues(jiraIssues, tickets); //auxiliary function for data extraction, reduces cognitive complexity of this method
             // incremented in each iteration to fetch the next page.
-            i += jiraIssues.length();
+            startPage += jiraIssues.length();
 
-        } while (i < total);
+        } while (startPage < total);
 
         Printer.println("Total tickets fetched: " + tickets.size() + " (out of " + total + " reported by JIRA)");
         printTicketsToCSV(tickets);
@@ -65,7 +68,7 @@ public class JiraController {
 
 
 
-    private static void printTicketsToCSV(List<JiraTicket> tickets){
+    private void printTicketsToCSV(List<JiraTicket> tickets){
 
         int i;
         String outname = projName + "Tickets.csv";  //output file
@@ -104,7 +107,7 @@ public class JiraController {
 
 
 
-    private static void parseIssues(JSONArray issues, List<JiraTicket> tickets) {
+    private void parseIssues(JSONArray issues, List<JiraTicket> tickets) {
 
         //parses a JSONArray of JIRA issues and turns them into JiraTicket objects
 
@@ -137,7 +140,7 @@ public class JiraController {
         }
     }
 
-    private static List<String> parseVersions(JSONObject fields, String versionType) {
+    private List<String> parseVersions(JSONObject fields, String versionType) {
 
         //Helper method to parse version arrays from JIRA fields
         List<String> parsedVersions = new ArrayList<>();
@@ -157,7 +160,7 @@ public class JiraController {
     }
 
 
-    private static JSONObject readJsonFromUrl(String url) throws IOException, JSONException {
+    private JSONObject readJsonFromUrl(String url) throws IOException, JSONException {
         JSONObject jsonObject = null;
         try (InputStream is = new URI(url).toURL().openStream()) {
             BufferedReader rd = new BufferedReader(new InputStreamReader(is, StandardCharsets.UTF_8));
@@ -169,7 +172,7 @@ public class JiraController {
         return jsonObject;
     }
 
-    private static String readAll(Reader rd) throws IOException {
+    private String readAll(Reader rd) throws IOException {
         StringBuilder sb = new StringBuilder();
         int cp;
         while ((cp = rd.read()) != -1) {

@@ -18,10 +18,10 @@ import java.util.List;
 public class GitController {
 
     /* class responsibility: uses JGit to access and manage Git repositories */
-    private static String projName;
+    private String projName;
 
 
-    public static void commitExtractor() {
+    public void commitExtractor() {
 
         projName = ConfigurationManager.getInstance().getProperty("project.name");
 
@@ -45,15 +45,8 @@ public class GitController {
 
                     //create new commit and add it to the list of commits
                     commitList.add(new Commit(commit.getName(), commit.getAuthorIdent().getName(),
-                            commit.getAuthorIdent().getWhenAsInstant(), commit.getShortMessage()));
-                    /*
-                    System.out.println("Commit: " + commit.getName());
-                    System.out.println("Author: " + commit.getAuthorIdent().getName());
-                    System.out.println("Date: " + commit.getAuthorIdent().getWhen());
-                    System.out.println("Message: " + commit.getFullMessage());
-                    System.out.println("----------------------------------");
+                            commit.getAuthorIdent().getWhenAsInstant(), commit.getFullMessage()));
 
-                     */
                 }
 
                 printCommitsToCSV(commitList);
@@ -63,7 +56,7 @@ public class GitController {
         }
     }
 
-    public static void printCommitsToCSV(List<Commit> commits ){
+    public void printCommitsToCSV(List<Commit> commits ){
 
         int i;
         String outname = projName + "Commits.csv";
@@ -72,7 +65,7 @@ public class GitController {
         try (FileWriter fileWriter = new FileWriter(new File (dir, outname))) {
 
             //csv file columns
-            fileWriter.append("Commit,Author,Date,Message");
+            fileWriter.append("Index,CommitID,Author,Date,Message");
             fileWriter.append("\n");
 
             for ( i = 0; i < commits.size(); i++){
@@ -86,9 +79,12 @@ public class GitController {
                 fileWriter.append(",");
                 fileWriter.append(commits.get(i).getDate());
                 fileWriter.append(",");
-                fileWriter.append(commits.get(i).getMessage());
+                String message = commits.get(i).getMessage().replace("\n", " ").replace(",", ";"); // comment cleanup for csv
+                fileWriter.append("\"").append(message).append("\"");
                 fileWriter.append(",");
                 fileWriter.append("\n");
+                fileWriter.flush();
+
             }
 
         } catch (IOException e) {

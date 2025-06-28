@@ -5,7 +5,6 @@ import org.example.util.Printer;
 import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
-
 import java.io.*;
 import java.net.URI;
 import java.net.URISyntaxException;
@@ -23,11 +22,11 @@ public class ReleaseInfoExtractor {
     * uses Jira Rest API to extract data regarding releases
     */
 
-    private static HashMap<LocalDateTime, String> releaseNames;
-    private static HashMap<LocalDateTime, String> releaseID;
-    private static ArrayList<LocalDateTime> releases;
+    private HashMap<LocalDateTime, String> releaseNames;
+    private HashMap<LocalDateTime, String> releaseID;
+    private ArrayList<LocalDateTime> releases;
 
-    public static void extractReleases() throws IOException, JSONException {
+    public void extractReleases() throws IOException, JSONException {
 
         String projName = ConfigurationManager.getInstance().getProperty("project.name");
 
@@ -102,7 +101,7 @@ public class ReleaseInfoExtractor {
     }
 
 
-    public static void addRelease(String strDate, String name, String id) {
+    public void addRelease(String strDate, String name, String id) {
         LocalDate date = LocalDate.parse(strDate);
         LocalDateTime dateTime = date.atStartOfDay();
         if (!releases.contains(dateTime))
@@ -112,7 +111,7 @@ public class ReleaseInfoExtractor {
     }
 
 
-    public static JSONObject readJsonFromUrl(String url) throws IOException, JSONException {
+    public JSONObject readJsonFromUrl(String url) throws IOException, JSONException {
         JSONObject jsonObj = null;
         try (InputStream is = new URI(url).toURL().openStream()) {
             BufferedReader rd = new BufferedReader(new InputStreamReader(is, StandardCharsets.UTF_8));
@@ -124,7 +123,7 @@ public class ReleaseInfoExtractor {
         return jsonObj;
     }
 
-    private static String readAll(Reader rd) throws IOException {
+    private String readAll(Reader rd) throws IOException {
         StringBuilder sb = new StringBuilder();
         int cp;
         while ((cp = rd.read()) != -1) {
