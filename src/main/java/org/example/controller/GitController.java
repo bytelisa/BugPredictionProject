@@ -15,18 +15,18 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 import org.eclipse.jgit.lib.Ref;
-import org.eclipse.jgit.revwalk.RevCommit;
 import org.eclipse.jgit.revwalk.RevWalk;
 
 public class GitController {
 
-    /* class responsibility: uses JGit to access and manage Git repositories */
-    private String projName;
-    private final Git git; // Assume Git object is now an instance field, initialized in constructor
+    /** Class responsibility: use JGit lib to access and manage Git repositories. Thus:
+     *      - extract commits
+     *      - extract tags
+     *      */
 
-    public GitController(Git git) {
-        this.git = git;
-    }
+
+    private String projName;
+    private Git git;
 
 
     public List<Commit> extractCommits() {
@@ -37,27 +37,27 @@ public class GitController {
         List<Commit> commitList = new ArrayList<>();
 
         try {
+
             //opens the repository
             FileRepositoryBuilder builder = new FileRepositoryBuilder();
             Repository repository = builder.setGitDir(new File(gitPath))
                     .readEnvironment()
                     .findGitDir()
                     .build();
+            this.git = new Git(repository);
 
             //access to git log to read commits
-            try (Git git = new Git(repository)) {
-                Iterable<RevCommit> commits = git.log().call();
+            Iterable<RevCommit> commits = git.log().call();
 
-                for (RevCommit commit : commits) {
+            for (RevCommit commit : commits) {
 
-                    //create new Commit and add it to the list of commits
-                    commitList.add(new Commit(commit.getName(), commit.getAuthorIdent().getName(),
-                            commit.getAuthorIdent().getWhenAsInstant(), commit.getFullMessage()));
-
-                }
-
-                printCommitsToCSV(commitList);
+                //create new Commit and add it to the list of commits
+                commitList.add(new Commit(commit.getName(), commit.getAuthorIdent().getName(),
+                        commit.getAuthorIdent().getWhenAsInstant(), commit.getFullMessage()));
             }
+
+            printCommitsToCSV(commitList);
+
         } catch (IOException | GitAPIException e) {
             Printer.errorPrint("Error while extracting commits.");
         }
@@ -104,7 +104,7 @@ public class GitController {
         List<GitTag> tags = new ArrayList<>();
         List<Ref> call = this.git.tagList().call();
 
-        //we use a revwalk to get the commit date from the tag's ObjectId
+        //we use a revwalk to get the commit date from the tag's id
         try (RevWalk walk = new RevWalk(this.git.getRepository())) {
 
             for (Ref ref : call) {
