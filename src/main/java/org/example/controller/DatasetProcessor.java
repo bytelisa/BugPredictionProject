@@ -2,11 +2,9 @@ package org.example.controller;
 
 import org.eclipse.jgit.api.errors.GitAPIException;
 import org.eclipse.jgit.lib.ObjectId;
-import org.example.entity.Commit;
-import org.example.entity.GitTag;
-import org.example.entity.JiraTicket;
-import org.example.entity.Release;
+import org.example.entity.*;
 import org.example.util.ConfigurationManager;
+import org.example.util.Pair;
 import org.example.util.Printer;
 import org.json.JSONException;
 
@@ -53,12 +51,15 @@ public class DatasetProcessor {
                     ticketToCommitsMap.size()
             ));
 
-           // Map<Release, List<Commit>> releaseCommits = partitionCommitsByRelease(releases, gitController);
+            Map<Release, List<Commit>> releaseCommits = partitionCommitsByRelease(releases, gitController);
 
+            // Now we have a map where each release is associated with the list of commits
+            // that were made during that release's development cycle.
+            // The next step would be to iterate over this map to perform the analysis.
 
             List<GitTag> tagList = gitController.extractTags();
 
-        } catch (IOException | JSONException e) {
+        } catch (IOException | JSONException | GitAPIException e) {
             Printer.errorPrint("Somethimg went wrong while extracting data.");
         }
     }
@@ -129,59 +130,55 @@ public class DatasetProcessor {
     }
 
 
-//    /**
-//     * Associates commits with their respective releases by matching JIRA releases to Git tags
-//     * and partitioning the commit history.
-//     *
-//     * @param jiraReleases The list of releases from JIRA.
-//     * @param gitController An instance of the GitController to interact with the repository.
-//     * @return A map where each Release is a key for a list of Commits in that release cycle.
-//     */
-//    private Map<Release, List<Commit>> partitionCommitsByRelease(List<Release> jiraReleases, GitController gitController) throws IOException, GitAPIException {
-//
-//        //matches Git tags to releases extracted by Jira
-//
-//        List<GitTag> allTags = gitController.extractTags();
-//        Map<Release, List<Commit>> releaseCommits = new LinkedHashMap<>(); // LinkedHashMap preserves insertion order
-//
-//        // 1. Match JIRA Releases to Git Tags (Heuristic Matching)
-//        List<Pair<Release, GitTag>> matchedPairs = new ArrayList<>();
-//        for (Release release : jiraReleases) {
-//
-//            // CAP-COMMENT: (HEURISTIC MATCHING) This is a simple but common heuristic.
-//            // It finds a tag whose name is contained within the JIRA release name, or vice versa.
-//            // E.g., JIRA "Version 2.1.0" matches Git tag "2.1.0".
-//            // This can be made more robust if needed (e.g., by normalizing numbers).
-//
-//            allTags.stream()
-//                    .filter(tag -> release.getName().contains(tag.getName()) || tag.getName().contains(release.getName()))
-//                    .findFirst()
-//                    .ifPresent(tag -> matchedPairs.add(new Pair<>(release, tag)));
-//        }
-//
-//        // 2. Sort matched pairs by the commit date of the tag to ensure chronological order.
-//        matchedPairs.sort(Comparator.comparing(p -> p.getValue().getCommitDate()));
-//
-//        // 3. Partition Commits using git log ranges
-//        ObjectId previousReleaseCommitId = null;
-//        for (Pair<Release, GitTag> pair : matchedPairs) {
-//            Release currentRelease = pair.getKey();
-//            ObjectId currentReleaseCommitId = pair.getValue().getCommitId();
-//
-//            List<Commit> commitsInReleaseCycle;
-//            if (previousReleaseCommitId == null) {
-//                // First release: get all commits from the beginning up to this release's tag.
-//                commitsInReleaseCycle = gitController.getCommitsInRange(null, currentReleaseCommitId);
-//            } else {
-//                // Subsequent releases: get commits between the last release's tag and this one's.
-//                commitsInReleaseCycle = gitController.getCommitsInRange(previousReleaseCommitId, currentReleaseCommitId);
-//            }
-//
-//            releaseCommits.put(currentRelease, commitsInReleaseCycle);
-//            previousReleaseCommitId = currentReleaseCommitId;
-//        }
-//
-//        return releaseCommits;
-//    }
+    /**
+     * Associates commits with their respective releases by matching JIRA releases to Git tags
+     * and partitioning the commit history.
+     *
+     * @param jiraReleases The list of releases from JIRA.
+     * @param gitController An instance of the GitController to interact with the repository.
+     * @return A map where each Release is a key for a list of Commits in that release cycle.
+     */
+    private Map<Release, List<Commit>> partitionCommitsByRelease(List<Release> jiraReleases, GitController gitController) throws IOException, GitAPIException {
+
+        //matches Git tags to releases extracted by Jira
+
+        List<GitTag> allTags = gitController.extractTags();
+        Map<Release, List<Commit>> releaseCommits = new LinkedHashMap<>(); // LinkedHashMap preserves insertion order
+
+        // Match JIRA Releases to Git Tags
+        List<Pair<Release, GitTag>> matchedPairs = new ArrayList<>();
+        for (Release release : jiraReleases) {
+
+            //finds a tag whose name is contained within the JIRA release name, or vice versa
+            // e.g., JIRA "Version 2.1.0" matches Git tag "2.1.0".
+
+            allTags.stream()
+                    .filter(tag -> release.getName().contains(tag.getName()) || tag.getName().contains(release.getName()))
+                    .findFirst()
+                    .ifPresent(tag -> matchedPairs.add(new Pair<>(release, tag)));
+        }
+
+        // Sort by the commit date for chronological order
+        matchedPairs.sort(Comparator.comparing(p -> p.getRight().getCommitDate()));
+
+        // Partition Commits using git log ranges
+        ObjectId previousReleaseCommitId = null;
+        for (Pair<Release, GitTag> pair : matchedPairs) {
+            Release currentRelease = pair.getLeft();
+            ObjectId currentReleaseCommitId = pair.getRight().getCommitId();
+
+            List<Commit> commitsInReleaseCycle;
+            if (previousReleaseCommitId == null) {
+                commitsInReleaseCycle = gitController.getCommitsInRange(null, currentReleaseCommitId);
+            } else {
+                commitsInReleaseCycle = gitController.getCommitsInRange(previousReleaseCommitId, currentReleaseCommitId);
+            }
+
+            releaseCommits.put(currentRelease, commitsInReleaseCycle);
+            previousReleaseCommitId = currentReleaseCommitId;
+        }
+
+        return releaseCommits;
+    }
 
 }

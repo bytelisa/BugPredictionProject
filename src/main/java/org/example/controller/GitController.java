@@ -1,7 +1,9 @@
 package org.example.controller;
 
 import org.eclipse.jgit.api.Git;
+import org.eclipse.jgit.api.LogCommand;
 import org.eclipse.jgit.api.errors.GitAPIException;
+import org.eclipse.jgit.lib.ObjectId;
 import org.eclipse.jgit.lib.Repository;
 import org.eclipse.jgit.revwalk.RevCommit;
 import org.eclipse.jgit.storage.file.FileRepositoryBuilder;
@@ -27,6 +29,7 @@ public class GitController {
 
     private String projName;
     private Git git;
+    private Repository repository;
 
 
     public List<Commit> extractCommits() {
@@ -40,11 +43,11 @@ public class GitController {
 
             //opens the repository
             FileRepositoryBuilder builder = new FileRepositoryBuilder();
-            Repository repository = builder.setGitDir(new File(gitPath))
+             this.repository = builder.setGitDir(new File(gitPath))
                     .readEnvironment()
                     .findGitDir()
                     .build();
-            this.git = new Git(repository);
+            this.git = new Git(this.repository);
 
             //access to git log to read commits
             Iterable<RevCommit> commits = git.log().call();
@@ -144,4 +147,35 @@ public class GitController {
 
     }
 
+    public List<Commit> getCommitsInRange(ObjectId startCommitId, ObjectId endCommitId) throws GitAPIException, IOException {
+
+        List<Commit> commitsInRange = new ArrayList<>();
+        LogCommand logCommand = this.git.log();
+
+        if (startCommitId == null) {
+            //sets the starting point of the history walk
+            logCommand.add(endCommitId);
+        } else {
+            // .addRange() is the JGit equivalent of 'git log <start>..<end>'
+            logCommand.addRange(startCommitId, endCommitId);
+        }
+
+        Iterable<RevCommit> commits = logCommand.call();
+
+        // like getAllCommits(). this could be extracted to a private helper method
+        for (RevCommit revCommit : commits) {
+            commitsInRange.add(new Commit(revCommit.getName(), revCommit.getAuthorIdent().getName(),
+                    revCommit.getAuthorIdent().getWhenAsInstant(), revCommit.getFullMessage()));
+        }
+        return commitsInRange;
+    }
+
+    /**
+     * Closes the underlying Git and Repository objects to release resources.
+     * Should be called when the controller is no longer needed.
+     */
+    public void close() {
+        this.git.close();
+        this.repository.close();
+    }
 }
