@@ -7,7 +7,7 @@ public class MethodExtractor {
     //csv format: project name, method name, release ID, <features> (about 10), bugginess [yes/no]
 
     //uses JavaParser Library to parse all methods in the desired project,
-    // it then multiplies them by the releases in favor of a more in depth analysis
+
 
     //todo oppure meglio ck di javaparser? Mi dovrebbe semplificare il lavoro
 

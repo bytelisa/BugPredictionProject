@@ -73,7 +73,7 @@ public class JiraController {
 
         int i;
         String outname = projName + "Tickets.csv";  //output file
-        String dir = "src/main/outputFiles";    //output directory
+        String dir = "src/main/outputFiles/" + projName;    //output directory
 
         try (FileWriter fileWriter = new FileWriter(new File(dir, outname))) {
 
@@ -85,7 +85,6 @@ public class JiraController {
             for ( i = 0; i < tickets.size(); i++) {
                 int index = i + 1;
                 JiraTicket ticket = tickets.get(i);
-                //todo check why comment is empty
 
                 fileWriter.append(Integer.toString(index));
                 fileWriter.append(",");
@@ -102,7 +101,8 @@ public class JiraController {
             }
 
         } catch (Exception e) {
-            Printer.println("Error in csv writer");
+            Printer.println("Error in csv writer - JiraController");
+            e.printStackTrace();
         }
     }
 
@@ -115,7 +115,7 @@ public class JiraController {
             JSONObject issue = issues.getJSONObject(i);
             JSONObject fields = issue.getJSONObject("fields");
 
-            //todo controlla affect version successivamente, per ora stai estraendo e basta
+            //affect versions will be checked later
 
             if (issue.has("key")) {
                 String issueId = issue.getString("id");

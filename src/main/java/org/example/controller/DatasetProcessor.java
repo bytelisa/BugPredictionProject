@@ -31,6 +31,7 @@ public class DatasetProcessor {
     }
 
     public void start() throws IOException, JSONException {
+        GitController gitController = null;
         try {
 
             //extract data
@@ -40,7 +41,7 @@ public class DatasetProcessor {
             JiraController jiraController = new JiraController();
             List<JiraTicket> tickets = jiraController.extractTicketList();
 
-            GitController gitController = new GitController();
+            gitController = new GitController();
             List<Commit> commits = gitController.extractCommits();
 
             // link data
@@ -53,14 +54,16 @@ public class DatasetProcessor {
 
             Map<Release, List<Commit>> releaseCommits = partitionCommitsByRelease(releases, gitController);
 
-            // Now we have a map where each release is associated with the list of commits
-            // that were made during that release's development cycle.
-            // The next step would be to iterate over this map to perform the analysis.
+            // Now we have a map where each release is associated with the list of commit that were made during that release's development cycle.
 
             List<GitTag> tagList = gitController.extractTags();
 
         } catch (IOException | JSONException | GitAPIException e) {
             Printer.errorPrint("Somethimg went wrong while extracting data.");
+        } finally {
+            if (gitController != null) {
+                gitController.close();
+            }
         }
     }
 
@@ -101,7 +104,7 @@ public class DatasetProcessor {
     private void dumpLinkingResults(Map<String, List<Commit>> ticketToCommitsMap, String projName) {
 
         String outname = projName + "LinkingValidation.csv";
-        String dir = "src/main/outputFiles";
+        String dir = "src/main/outputFiles/" + projName;
 
         try (FileWriter writer = new FileWriter(new File(dir, outname))) {
             writer.append("TicketID,CommitHash,CommitMessage\n");

@@ -72,7 +72,8 @@ public class ReleaseInfoExtractor {
 
         //output file and its directory
         String outname = projName + "VersionInfo.csv";
-        String dir = "src/main/outputFiles";
+        String dir = "src/main/outputFiles/" + projName;
+
 
         try (FileWriter fileWriter = new FileWriter(new File(dir, outname))) {
 
@@ -104,7 +105,8 @@ public class ReleaseInfoExtractor {
             }
 
         } catch (Exception e) {
-            Printer.println("Error in csv writer");
+            Printer.println("Error in csv writer - ReleaseInfoExtractor");
+            e.printStackTrace();
         }
         return releaseList;
     }

@@ -71,7 +71,7 @@ public class GitController {
 
         int i;
         String outname = projName + "Commits.csv";
-        String dir = "src/main/outputFiles";
+        String dir = "src/main/outputFiles/" + projName;
 
         try (FileWriter fileWriter = new FileWriter(new File (dir, outname))) {
 
@@ -99,7 +99,8 @@ public class GitController {
             }
 
         } catch (IOException e) {
-            Printer.println("Error in csv writer");
+            Printer.println("Error in csv writer - GitController");
+            e.printStackTrace();
         }
     }
 
@@ -128,7 +129,7 @@ public class GitController {
     private void printTagsToCSV(List<GitTag> tagList){
 
         String outname = projName + "Tags.csv";  //output file
-        String dir = "src/main/outputFiles";    //output directory
+        String dir = "src/main/outputFiles/" + projName;    //output directory
 
         try (FileWriter fileWriter = new FileWriter(new File (dir, outname))) {
             for (GitTag tag: tagList) {
