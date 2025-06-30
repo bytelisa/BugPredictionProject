@@ -7,6 +7,7 @@ import java.time.Duration;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.Comparator;
 import java.util.List;
 import java.util.logging.Level;
 import java.util.logging.Logger;
@@ -40,13 +41,18 @@ public class ProportionController {
 
             if (ticket.getInjectVersion() == null) {
 
+                //just to make sure they're actually sorted
+                if (ticket.getFixVersions() != null) {
+                    ticket.getFixVersions().sort(Comparator.comparing(Release::getDate));
+                }
+
                 Release estimatedIV = estimateInjectedVersion(ticket, pValue, allReleases);
 
                 if (estimatedIV != null) {
                     ticket.setInjectVersion(estimatedIV);
 
                 } else {
-                    // todo capire se questa è la cosa giusta da fare se non riusciamo a stimarla
+                    LOGGER.log(Level.WARNING, "Could not estimate IV for ticket {0}. Defaulting IV to OV.", ticket.getName());
                     ticket.setInjectVersion(ticket.getOpeningVersion());
                 }
             }
@@ -71,11 +77,10 @@ public class ProportionController {
             Release iv = ticket.getInjectVersion();
             Release ov = ticket.getOpeningVersion();
 
-            // We need IV, OV, and at least one FV to calculate p.
+            // we need IV, OV, and at least one FV to calculate p.
             if (iv != null && ov != null && !ticket.getFixVersions().isEmpty()) {
 
-                // For FV, we take the last fix version, assuming it's the final one.
-                //todo check if I sorted fix versions and if not DO IT!!!!
+                // for FV, we take the last fix version, assuming it's the final one (we sorted beforehand in applyProportion)
                 Release fv = ticket.getFixVersions().getLast();
 
                 Duration fvToOv = Duration.between(ov.getDate(), fv.getDate());
