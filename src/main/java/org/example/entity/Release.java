@@ -1,7 +1,5 @@
-// src/main/java/org/example/entity/Release.java
 package org.example.entity;
 
-import java.time.LocalDate;
 import java.time.Instant;
 
 public class Release {
