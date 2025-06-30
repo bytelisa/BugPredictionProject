@@ -19,6 +19,7 @@ import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.HashMap;
 import java.util.List;
+import java.util.logging.Logger;
 
 public class ReleaseController {
 
@@ -31,6 +32,7 @@ public class ReleaseController {
     private HashMap<LocalDateTime, String> releaseID;
     private ArrayList<LocalDateTime> releases;
     private List<Release> releaseList;
+    private static final Logger LOGGER = Logger.getLogger(ProportionController.class.getName());
 
     public List<Release> extractReleases() throws IOException, JSONException {
 

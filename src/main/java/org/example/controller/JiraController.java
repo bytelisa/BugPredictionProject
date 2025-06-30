@@ -15,11 +15,13 @@ import java.time.Instant;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.logging.Logger;
 import java.util.stream.Collectors;
 
 public class JiraController {
 
     private String projName;
+    private static final Logger LOGGER = Logger.getLogger(ProportionController.class.getName());
 
     public JiraController() {
         this.projName = ConfigurationManager.getInstance().getProperty("project.name");
