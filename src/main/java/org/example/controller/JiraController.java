@@ -134,8 +134,13 @@ public class JiraController {
                     injectedVersion = affectedReleases.getFirst();
                 }
 
-                String comment = fields.optJSONObject("comment").optJSONArray("comments").optJSONObject(0).optString("body", "");
-
+                String comment = "";
+                if (fields.has("comment") && fields.getJSONObject("comment").has("comments")) {
+                    JSONArray comments = fields.getJSONObject("comment").getJSONArray("comments");
+                    if (!comments.isEmpty()) {
+                        comment = comments.getJSONObject(0).optString("body", ""); // Get first comment's body
+                    }
+                }
                 tickets.add(new JiraTicket(issueId, name, resolution, comment, openingVersion, injectedVersion, fixReleases, affectedReleases));
             }
         }
