@@ -48,7 +48,8 @@ public class ProportionController {
 
                 Release estimatedIV = estimateInjectedVersion(ticket, pValue, allReleases);
 
-                if (estimatedIV != null) {
+                // estimate injecting version of the bug cannot come later than opening version of the ticket!
+                if (estimatedIV != null && estimatedIV.getDate().isBefore(ticket.getOpeningVersion().getDate())) {
                     ticket.setInjectVersion(estimatedIV);
 
                 } else {
