@@ -146,7 +146,7 @@ public class ReleaseController {
     }
 
 
-    public Release findReleaseByDate(Instant date, List<Release> allReleases) {
+    public static Release findReleaseByDate(Instant date, List<Release> allReleases) {
          //Finds the release that was active at a specific date.
          // Assumes releases are sorted chronologically.
 
