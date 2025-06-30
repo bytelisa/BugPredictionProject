@@ -4,156 +4,45 @@ import java.util.List;
 
 public class JiraTicket {
 
-
-    /* bugs to be considered for the analysis:
-            *       Jira tickets like [issuetype = Bug AND status in (Resolved, Closed) AND resolution = Fixed]
-            * bugs to be excluded: bugs without an affect version (pre-release), bugs devoid of related fix commit on git
-    */
-
+    // MODIFICA: Rimossi tutti i campi e costruttori duplicati o non utilizzati.
+    // SPIEGAZIONE: Manteniamo un solo set di campi per le versioni, usando oggetti Release per coerenza.
+    // I campi stringa ridondanti sono stati eliminati per evitare confusione.
     private String issueId;
-    private String description;
     private String name;
-    private boolean archived;
-    private boolean released;
-    private String releaseDate;
+    private String resolution;
+    private String description; // Rinominato da 'comment' per chiarezza
 
-    private String status;  //resolved or closed
-    private String resolution;  //fixed
-    private String creationDate;
-    private String resolutionDate;
-    private List<String> fixVersions;
-    private List<String> affectVersions;
-
-    public JiraTicket(){}
-
-    public JiraTicket(String id, String name,
-                      String resolution, String creationDate, String resolutionDate, List<String> affectV, String comment){
-        this.issueId = id;
-        this.name = name;
-        this.resolution = resolution;
-        this.creationDate = creationDate;
-        this.resolutionDate = resolutionDate;
-        this.description = comment;
-        this.affectVersions = affectV;
-    }
-
-    //todo DUBBIO: come trovo IV senza sapere la data? Risposta: usa metodo proportion (?)
-    public JiraTicket(String id, String name,
-                      String resolution, List<String> fixV, List<String> affectV, String comment){
-        this.issueId = id;
-        this.name = name;
-        this.resolution = resolution;
-        this.description = comment;
-        this.affectVersions = affectV;
-        this.fixVersions = fixV;
-    }
+    // Campi chiave per l'analisi
+    private Release openingVersion;
+    private Release injectVersion; // 'injectedVersion' è un nome più comune
+    private List<Release> fixVersions;
+    private List<Release> affectedVersions;
 
 
-
-    public JiraTicket(String id, String description, String status, String resolution,
-                      boolean released, String releaseDate){
-        this.issueId = id;
-        this.status = status;
-        this.resolution = resolution;
-        this.description = description;
-        this.released = released;
-        this.releaseDate = releaseDate;
-
-    }
-
-    public String getIssueId() {
-        return issueId;
-    }
-
-    public void setIssueId(String issueId) {
+    public JiraTicket(String issueId, String name, String resolution, String description,
+                      Release openingVersion, Release injectVersion, List<Release> fixVersions, List<Release> affectedVersions) {
         this.issueId = issueId;
-    }
-
-    public String getDescription() {
-        return description;
-    }
-
-    public void setDescription(String description) {
-        this.description = description;
-    }
-
-    public String getName() {
-        return name;
-    }
-
-    public void setName(String name) {
         this.name = name;
-    }
-
-    public boolean isArchived() {
-        return archived;
-    }
-
-    public void setArchived(boolean archived) {
-        this.archived = archived;
-    }
-
-    public boolean isReleased() {
-        return released;
-    }
-
-    public void setReleased(boolean released) {
-        this.released = released;
-    }
-
-    public String getReleaseDate() {
-        return releaseDate;
-    }
-
-    public void setReleaseDate(String releaseDate) {
-        this.releaseDate = releaseDate;
-    }
-
-    public String getStatus() {
-        return status;
-    }
-
-    public void setStatus(String status) {
-        this.status = status;
-    }
-
-    public String getResolution() {
-        return resolution;
-    }
-
-    public void setResolution(String resolution) {
         this.resolution = resolution;
-    }
-
-    public String getCreationDate() {
-        return creationDate;
-    }
-
-    public void setCreationDate(String creationDate) {
-        this.creationDate = creationDate;
-    }
-
-    public String getResolutionDate() {
-        return resolutionDate;
-    }
-
-    public void setResolutionDate(String resolutionDate) {
-        this.resolutionDate = resolutionDate;
-    }
-
-    public List<String> getAffectVersions() {
-        return affectVersions;
-    }
-
-    public void setAffectVersions(List<String> affectVersions) {
-        this.affectVersions = affectVersions;
-    }
-
-    public List<String> getFixVersions() {
-        return fixVersions;
-    }
-
-    public void setFixVersions(List<String> fixVersions) {
+        this.description = description;
+        this.openingVersion = openingVersion;
+        this.injectVersion = injectVersion;
         this.fixVersions = fixVersions;
+        this.affectedVersions = affectedVersions;
+    }
+
+
+    public String getIssueId() { return issueId; }
+    public String getName() { return name; }
+    public String getResolution() { return resolution; }
+    public String getDescription() { return description; }
+    public Release getOpeningVersion() { return openingVersion; }
+    public Release getInjectVersion() { return injectVersion; }
+    public List<Release> getFixVersions() { return fixVersions; }
+    public List<Release> getAffectedVersions() { return affectedVersions; }
+
+    public void setInjectVersion(Release injectVersion) {
+        //for estimation via proportion
+        this.injectVersion = injectVersion;
     }
 }

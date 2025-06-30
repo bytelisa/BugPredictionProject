@@ -1,6 +1,7 @@
 package org.example.controller;
 
 import org.example.entity.JiraTicket;
+import org.example.entity.Release;
 import org.example.util.ConfigurationManager;
 import org.example.util.Printer;
 import org.json.JSONArray;
@@ -10,55 +11,49 @@ import java.io.*;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.nio.charset.StandardCharsets;
+import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
-
+import java.util.stream.Collectors;
 
 public class JiraController {
 
-    /** Extracts info about issues using the Jira Rest API.
-
-    * bugs to be considered for the analysis:
-    *       Jira tickets like [issuetype = Bug AND status in (Resolved, Closed) AND resolution = Fixed]
-    * bugs to be excluded: bugs without an affect version (pre-release), bugs devoid of related fix commit on git
-    */
-
     private String projName;
-    private List<JiraTicket> ticketList;
-
 
     public JiraController() {
         this.projName = ConfigurationManager.getInstance().getProperty("project.name");
     }
 
+    public List<JiraTicket> extractTicketList(List<Release> allReleases) throws IOException, JSONException {
 
-    public List<JiraTicket> extractTicketList() throws IOException, JSONException {
+        //release list is needed to map ticket dates to releases
 
-        projName = ConfigurationManager.getInstance().getProperty("project.name");
         List<JiraTicket> tickets = new ArrayList<>();
         int startPage = 0;
-        int total;
+        int total = 0;
         int maxResults = 100;
 
         do {
-            //url directly filters tickets using jira rest api
             String url = String.format(
                     "https://issues.apache.org/jira/rest/api/2/search?jql=project=%s" +
                             "%%20AND%%20issuetype=Bug%%20AND%%20status%%20in(Resolved,Closed)%%20AND%%20resolution=Fixed" +
+                            "&fields=id,key,resolution,created,versions,fixVersions,comment" +
                             "&startAt=%d&maxResults=%d",
                     projName, startPage, maxResults
             );
 
-            Printer.println("Fetching URL: " + url); // log for debug
-
+            Printer.println("Fetching URL: " + url);
 
             JSONObject json = readJsonFromUrl(url);
-            JSONArray jiraIssues;
-            jiraIssues = json.getJSONArray("issues");
-            total = json.getInt("total"); //total number of tickets that satisfy query
+            if (json == null) break; //safe handling
 
-            parseIssues(jiraIssues, tickets); //auxiliary function for data extraction, reduces cognitive complexity of this method
-            // incremented in each iteration to fetch the next page.
+            JSONArray jiraIssues = json.getJSONArray("issues");
+            if (startPage == 0) { //only read total once
+                total = json.getInt("total");
+            }
+
+            parseIssues(jiraIssues, tickets, allReleases);
+
             startPage += jiraIssues.length();
 
         } while (startPage < total);
@@ -68,120 +63,104 @@ public class JiraController {
         return tickets;
     }
 
-
     private void printTicketsToCSV(List<JiraTicket> tickets){
 
-        int i;
-        String outname = projName + "Tickets.csv";  //output file
-        String dir = "src/main/outputFiles/" + projName;    //output directory
+        String outname = projName + "Tickets.csv";
+        String dir = "output/" + projName;
+        new File(dir).mkdirs();
 
         try (FileWriter fileWriter = new FileWriter(new File(dir, outname))) {
+            fileWriter.append("Index,IssueID,Name,InjectVersion,OpeningVersion,FixVersions\n");
 
-            //csv file columns
-            fileWriter.append("Index,IssueID,Name,ResolutionStatus,AffectVersions,FixVersions");
-            fileWriter.append("\n");
+            for (int i = 0; i < tickets.size(); i++) {
 
-
-            for ( i = 0; i < tickets.size(); i++) {
-                int index = i + 1;
                 JiraTicket ticket = tickets.get(i);
 
-                fileWriter.append(Integer.toString(index));
-                fileWriter.append(",");
-                fileWriter.append(tickets.get(i).getIssueId());
-                fileWriter.append(",");
-                fileWriter.append(tickets.get(i).getName());
-                fileWriter.append(",");
-                fileWriter.append(tickets.get(i).getResolution());
-                fileWriter.append(",");
-                fileWriter.append("\"").append(String.join(";", ticket.getAffectVersions())).append("\""); // not using commas because otherwise it will mess up the csv
-                fileWriter.append(",");
-                fileWriter.append("\"").append(String.join(";", ticket.getFixVersions())).append("\"");
-                fileWriter.append("\n");
-            }
+                fileWriter.append(String.valueOf(i + 1));
+                fileWriter.append(",").append(ticket.getIssueId());
+                fileWriter.append(",").append(ticket.getName());
 
+                //handle possibly not knowing inject/opening version
+                fileWriter.append(",").append(ticket.getInjectVersion() != null ? ticket.getInjectVersion().getName() : "N/A");
+                fileWriter.append(",").append(ticket.getOpeningVersion() != null ? ticket.getOpeningVersion().getName() : "N/A");
+
+                // turns release list into a string
+                String fixVersionNames = ticket.getFixVersions().stream().map(Release::getName).collect(Collectors.joining(";"));
+                fileWriter.append(",\"").append(fixVersionNames).append("\"\n");
+            }
         } catch (Exception e) {
             Printer.println("Error in csv writer - JiraController");
-            e.printStackTrace();
         }
     }
 
+    private void parseIssues(JSONArray issues, List<JiraTicket> tickets, List<Release> allReleases) {
 
-    private void parseIssues(JSONArray issues, List<JiraTicket> tickets) {
-
-        //parses a JSONArray of JIRA issues and turns them into JiraTicket objects
+        //uses releases for the mapping logic
 
         for (int i = 0; i < issues.length(); i++) {
             JSONObject issue = issues.getJSONObject(i);
             JSONObject fields = issue.getJSONObject("fields");
 
-            //affect versions will be checked later
-
             if (issue.has("key")) {
                 String issueId = issue.getString("id");
                 String name = issue.getString("key");
-                String resolution = fields.has("resolution") && !fields.isNull("resolution")
-                        ? fields.getJSONObject("resolution").getString("name")
-                        : "";
+                String resolution = fields.optString("resolution.name", "");
 
-                List<String> affectVersions = parseVersions(fields, "versions");
-                List<String> fixVersions = parseVersions(fields, "fixVersions");
 
-                String comment = "";
-                if (fields.has("comment") && fields.getJSONObject("comment").has("comments")) {
-                    JSONArray comments = fields.getJSONObject("comment").getJSONArray("comments");
-                    if (!comments.isEmpty()) {
-                        comment = comments.getJSONObject(0).optString("body", ""); // Get first comment's body
-                    }
+                List<Release> affectedReleases = parseReleasesFromJsonArray(fields.optJSONArray("versions"), allReleases);
+                List<Release> fixReleases = parseReleasesFromJsonArray(fields.optJSONArray("fixVersions"), allReleases);
+
+                Instant creationDate = Instant.parse(fields.getString("created"));
+                Release openingVersion = ReleaseController.findReleaseByDate(creationDate, allReleases);
+
+                Release injectedVersion = null;
+
+                if (!affectedReleases.isEmpty()) {
+                    // IV is the first one of the affected versions if they are in order
+                    injectedVersion = affectedReleases.getFirst();
                 }
 
-                tickets.add(new JiraTicket(issueId, name, resolution, fixVersions, affectVersions, comment));
+                String comment = fields.optJSONObject("comment").optJSONArray("comments").optJSONObject(0).optString("body", "");
+
+                tickets.add(new JiraTicket(issueId, name, resolution, comment, openingVersion, injectedVersion, fixReleases, affectedReleases));
             }
         }
     }
 
+    private List<Release> parseReleasesFromJsonArray(JSONArray versionsArray, List<Release> allReleases) {
+        //turns JSON Array of versions into a List<Release>
 
-    private List<String> parseVersions(JSONObject fields, String versionType) {
+        List<Release> foundReleases = new ArrayList<>();
+        if (versionsArray == null) return foundReleases;
 
-        //Helper method to parse version arrays from JIRA fields
-        List<String> parsedVersions = new ArrayList<>();
+        for (int i = 0; i < versionsArray.length(); i++) {
+            JSONObject versionObj = versionsArray.getJSONObject(i);
+            String versionName = versionObj.optString("name");
 
-        if (fields.has(versionType)) {
-            JSONArray versions = fields.getJSONArray(versionType);
-
-            for (int j = 0; j < versions.length(); j++) {
-                JSONObject version = versions.getJSONObject(j);
-
-                if (version.has("name")) {
-                    parsedVersions.add(version.getString("name"));
-                }
-            }
+            //finds object corresponding to name
+            allReleases.stream()
+                    .filter(r -> r.getName().equals(versionName))
+                    .findFirst()
+                    .ifPresent(foundReleases::add);
         }
-        return parsedVersions;
+        //sorting
+        foundReleases.sort(java.util.Comparator.comparing(Release::getDate));
+        return foundReleases;
     }
-
 
     private JSONObject readJsonFromUrl(String url) throws IOException, JSONException {
-        JSONObject jsonObject = null;
-        try (InputStream is = new URI(url).toURL().openStream()) {
-            BufferedReader rd = new BufferedReader(new InputStreamReader(is, StandardCharsets.UTF_8));
-            String jsonText = readAll(rd);
-            jsonObject = new JSONObject(jsonText);
+        try {
+            return new JSONObject(readAll(new BufferedReader(new InputStreamReader(new URI(url).toURL().openStream(), StandardCharsets.UTF_8))));
         } catch (URISyntaxException e) {
-            Printer.errorPrint("Invalid url.");
+            Printer.errorPrint("Invalid url: " + url);
+            return null;
         }
-        return jsonObject;
     }
-
 
     private String readAll(Reader rd) throws IOException {
         StringBuilder sb = new StringBuilder();
         int cp;
-        while ((cp = rd.read()) != -1) {
-            sb.append((char) cp);
-        }
+        while ((cp = rd.read()) != -1) sb.append((char) cp);
         return sb.toString();
     }
-
-
 }
