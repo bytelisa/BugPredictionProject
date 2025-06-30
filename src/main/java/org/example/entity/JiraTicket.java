@@ -4,19 +4,16 @@ import java.util.List;
 
 public class JiraTicket {
 
-    // MODIFICA: Rimossi tutti i campi e costruttori duplicati o non utilizzati.
-    // SPIEGAZIONE: Manteniamo un solo set di campi per le versioni, usando oggetti Release per coerenza.
-    // I campi stringa ridondanti sono stati eliminati per evitare confusione.
-    private String issueId;
-    private String name;
-    private String resolution;
-    private String description; // Rinominato da 'comment' per chiarezza
 
-    // Campi chiave per l'analisi
-    private Release openingVersion;
+    private final String issueId;
+    private final String name;
+    private final String resolution;
+    private final String description; // Rinominato da 'comment' per chiarezza
+
+    private final Release openingVersion;
     private Release injectVersion; // 'injectedVersion' è un nome più comune
-    private List<Release> fixVersions;
-    private List<Release> affectedVersions;
+    private final List<Release> fixVersions;
+    private final List<Release> affectedVersions;
 
 
     public JiraTicket(String issueId, String name, String resolution, String description,
