@@ -12,6 +12,7 @@ import java.io.File;
 import java.io.FileWriter;
 import java.io.IOException;
 import java.util.*;
+import java.util.logging.Logger;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
@@ -25,21 +26,23 @@ public class DatasetProcessor {
      */
     private final String projName;
     private static final Pattern JIRA_ID_PATTERN = Pattern.compile("([A-Z]+-\\d+)");
+    private static final Logger LOGGER = Logger.getLogger(ProportionController.class.getName());
+
 
     public DatasetProcessor() {
         this.projName = ConfigurationManager.getInstance().getProperty("project.name");
     }
 
-    public void start() throws IOException, JSONException {
+    public void extractData() throws IOException, JSONException {
         GitController gitController = null;
         try {
 
             //extract data
-            ReleaseInfoExtractor releaseInfoExtractor = new ReleaseInfoExtractor();
-            List<Release> releases = releaseInfoExtractor.extractReleases();
+            ReleaseController releaseController = new ReleaseController();
+            List<Release> releases = releaseController.extractReleases();
 
             JiraController jiraController = new JiraController();
-            List<JiraTicket> tickets = jiraController.extractTicketList();
+            List<JiraTicket> tickets = jiraController.extractTicketList(releases);
 
             gitController = new GitController();
             List<Commit> commits = gitController.extractCommits();
@@ -53,10 +56,17 @@ public class DatasetProcessor {
             ));
 
             Map<Release, List<Commit>> releaseCommits = partitionCommitsByRelease(releases, gitController);
+            Printer.println(String.format("Partitioning complete: Assigned commits to %d releases.", releaseCommits.size()));
+
+            dumpPartitioningResults(releaseCommits, this.projName);
 
             // Now we have a map where each release is associated with the list of commit that were made during that release's development cycle.
 
             List<GitTag> tagList = gitController.extractTags();
+
+            // Proportion technique to estimate IV and AVs
+            ProportionController proportion = new ProportionController();
+            proportion.applyProportion(tickets, releases);
 
         } catch (IOException | JSONException | GitAPIException e) {
             Printer.errorPrint("Somethimg went wrong while extracting data.");
@@ -66,6 +76,7 @@ public class DatasetProcessor {
             }
         }
     }
+
 
 
     public Map<String, List<Commit>> linkCommitsToJiraTickets(List<Commit> commits, List<JiraTicket> tickets) {
@@ -133,17 +144,10 @@ public class DatasetProcessor {
     }
 
 
-    /**
-     * Associates commits with their respective releases by matching JIRA releases to Git tags
-     * and partitioning the commit history.
-     *
-     * @param jiraReleases The list of releases from JIRA.
-     * @param gitController An instance of the GitController to interact with the repository.
-     * @return A map where each Release is a key for a list of Commits in that release cycle.
-     */
-    private Map<Release, List<Commit>> partitionCommitsByRelease(List<Release> jiraReleases, GitController gitController) throws IOException, GitAPIException {
 
-        //matches Git tags to releases extracted by Jira
+    private Map<Release, List<Commit>> partitionCommitsByRelease(List<Release> jiraReleases, GitController gitController) throws IOException, GitAPIException {
+        //Associates commits with their respective releases by matching JIRA releases to Git tags
+        //       returns a map where each Release is a key for a list of Commits in that release cycle
 
         List<GitTag> allTags = gitController.extractTags();
         Map<Release, List<Commit>> releaseCommits = new LinkedHashMap<>(); // LinkedHashMap preserves insertion order
@@ -182,6 +186,51 @@ public class DatasetProcessor {
         }
 
         return releaseCommits;
+    }
+
+    private void dumpPartitioningResults(Map<Release, List<Commit>> releaseCommits, String projName) {
+        String outname = projName + "_PartitioningValidation.csv";
+        String dir = "src/main/outputFiles/" + projName;
+
+
+        try (FileWriter writer = new FileWriter(new File(dir, outname))) {
+            // Write the header of the CSV file
+            writer.append("ReleaseName,ReleaseDate,CommitHash,CommitDate,CommitMessage\n");
+
+            // ITERATE OVER THE MAP'S ENTRY SET for efficiency.
+            for (Map.Entry<Release, List<Commit>> entry : releaseCommits.entrySet()) {
+                Release release = entry.getKey();
+                List<Commit> commits = entry.getValue();
+
+                // If a release has no commits, you might still want to log it to see it was processed
+                if (commits.isEmpty()) {
+                    writer.append(release.getName());
+                    writer.append(",");
+                    writer.append(release.getDate().toString());
+                    writer.append(",NO_COMMITS,N/A,N/A\n");
+                    continue; // Go to the next release
+                }
+
+                for (Commit commit : commits) {
+                    writer.append(release.getName());
+                    writer.append(",");
+                    writer.append(release.getDate().toString());
+                    writer.append(",");
+                    writer.append(commit.getCommitID());
+                    writer.append(",");
+                    writer.append(commit.getDate().toString());
+                    writer.append(",");
+
+                    // Clean the commit message for CSV compatibility
+                    String cleanMessage = commit.getMessage().replace("\n", " ").replace("\"", "\"\"");
+                    writer.append("\"").append(cleanMessage).append("\"");
+                    writer.append("\n");
+                }
+            }
+        } catch (IOException e) {
+            Printer.println("Failed to write partitioning validation file: " + e.getMessage());
+        }
+        Printer.println("Partitioning validation results saved to: " + dir + "/" + outname);
     }
 
 }
