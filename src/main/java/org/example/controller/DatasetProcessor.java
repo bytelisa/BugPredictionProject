@@ -67,6 +67,7 @@ public class DatasetProcessor {
             // Proportion technique to estimate IV and AVs
             ProportionController proportion = new ProportionController();
             proportion.applyProportion(tickets, releases);
+            jiraController.printTicketsToCSV(tickets);  //update tickets and versions
 
         } catch (IOException | JSONException | GitAPIException e) {
             Printer.errorPrint("Somethimg went wrong while extracting data.");

@@ -132,7 +132,7 @@ public class ProportionController {
     }
 
 
-    private void determineAffectedVersions(JiraTicket ticket, List<Release> allReleases) {
+    private void determineAffectedVersions(JiraTicket ticket, List<Release> releases) {
 
         // Populates the affected versions list for a ticket. A release is considered affected
         // if its date falls within the [IV, FV) interval.
@@ -140,18 +140,17 @@ public class ProportionController {
         Release iv = ticket.getInjectVersion();
 
         if (iv == null || ticket.getFixVersions().isEmpty()) {
-            return; // Cannot determine the range.
+            return; // Cannot determine the range
         }
 
-        Release fv = ticket.getFixVersions().get(ticket.getFixVersions().size() - 1);
+        Release fv = ticket.getFixVersions().getLast();
 
         Instant ivDate = iv.getDate();
         Instant fvDate = fv.getDate();
 
         List<Release> affected = new ArrayList<>();
 
-        for (Release release : allReleases) {
-
+        for (Release release : releases) {
             Instant releaseDate = release.getDate();
 
             // A release is affected if: releaseDate >= ivDate AND releaseDate < fvDate
@@ -160,5 +159,7 @@ public class ProportionController {
             }
         }
 
+        // update internal list of affected versions with the one we just computed
+        ticket.setAffectVersions(affected);
     }
 }

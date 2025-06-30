@@ -13,7 +13,7 @@ public class JiraTicket {
     private final Release openingVersion;
     private Release injectVersion; // 'injectedVersion' è un nome più comune
     private final List<Release> fixVersions;
-    private final List<Release> affectedVersions;
+    private List<Release> affectedVersions;
 
 
     public JiraTicket(String issueId, String name, String resolution, String description,
@@ -39,7 +39,10 @@ public class JiraTicket {
     public List<Release> getAffectedVersions() { return affectedVersions; }
 
     public void setInjectVersion(Release injectVersion) {
-        //for estimation via proportion
         this.injectVersion = injectVersion;
+    }
+
+    public void setAffectVersions(List<Release> affectedVersions) {
+        this.affectedVersions = affectedVersions;
     }
 }

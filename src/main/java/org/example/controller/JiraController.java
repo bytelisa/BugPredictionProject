@@ -66,7 +66,7 @@ public class JiraController {
         return tickets;
     }
 
-    private void printTicketsToCSV(List<JiraTicket> tickets){
+    public void printTicketsToCSV(List<JiraTicket> tickets){
 
         String outname = projName + "Tickets.csv";
         String dir = "src/main/outputFiles/" + projName;
