@@ -1,5 +1,6 @@
 package org.example.controller;
 
+import org.eclipse.jgit.api.CheckoutCommand;
 import org.eclipse.jgit.api.Git;
 import org.eclipse.jgit.api.LogCommand;
 import org.eclipse.jgit.api.errors.GitAPIException;
@@ -16,6 +17,10 @@ import java.io.FileWriter;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Optional;
+import java.util.logging.Level;
+import java.util.logging.Logger;
+
 import org.eclipse.jgit.lib.Ref;
 import org.eclipse.jgit.revwalk.RevWalk;
 
@@ -30,6 +35,7 @@ public class GitController {
     private String projName;
     private Git git;
     private Repository repository;
+    private static final Logger LOGGER = Logger.getLogger(GitController.class.getName());
 
 
     public List<Commit> extractCommits() {
@@ -179,4 +185,37 @@ public class GitController {
         this.git.close();
         this.repository.close();
     }
+
+    public boolean checkoutToTag(String tagName) {
+        LOGGER.log(Level.INFO, "Attempting to checkout to tag: {0}", tagName);
+
+        try {
+
+            // The tagList() command returns a list of Ref objects.
+            // We need to find the ref that matches our tagName
+            List<Ref> tags = this.git.tagList().call();
+            Optional<Ref> tagRef = tags.stream()
+                    .filter(ref -> ref.getName().equals("refs/tags/" + tagName))
+                    .findFirst();
+
+            if (tagRef.isEmpty()) {
+                LOGGER.log(Level.WARNING, "Tag not found: {0}", tagName);
+                return false;
+            }
+
+            // We set the name of the ref we want to check out
+            // could be a branch name, a tag name, or a commit hash
+            CheckoutCommand checkoutCommand = this.git.checkout();
+            checkoutCommand.setName(tagName);
+            checkoutCommand.call();
+
+            LOGGER.log(Level.INFO, "Successfully checked out to tag: {0}", tagName);
+            return true;
+
+        } catch (GitAPIException e) {
+            LOGGER.log(Level.SEVERE, "Failed to checkout tag " + tagName, e);
+            return false;
+        }
+    }
+
 }
