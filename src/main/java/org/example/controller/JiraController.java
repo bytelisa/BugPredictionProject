@@ -12,6 +12,7 @@ import java.net.URI;
 import java.net.URISyntaxException;
 import java.nio.charset.StandardCharsets;
 import java.time.Instant;
+import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Collectors;
@@ -70,7 +71,7 @@ public class JiraController {
         new File(dir).mkdirs();
 
         try (FileWriter fileWriter = new FileWriter(new File(dir, outname))) {
-            fileWriter.append("Index,IssueID,Name,InjectVersion,OpeningVersion,FixVersions\n");
+            fileWriter.append("Index,IssueID,Name,InjectVersion,OpeningVersion,AffectedVersions,FixVersions\n");
 
             for (int i = 0; i < tickets.size(); i++) {
 
@@ -84,8 +85,16 @@ public class JiraController {
                 fileWriter.append(",").append(ticket.getInjectVersion() != null ? ticket.getInjectVersion().getName() : "N/A");
                 fileWriter.append(",").append(ticket.getOpeningVersion() != null ? ticket.getOpeningVersion().getName() : "N/A");
 
-                // turns release list into a string
-                String fixVersionNames = ticket.getFixVersions().stream().map(Release::getName).collect(Collectors.joining(";"));
+
+                // uses stream().map().collect() to create a valid string for the release list
+                String affectedVersionNames = ticket.getAffectedVersions().stream()
+                        .map(Release::getName)
+                        .collect(Collectors.joining(";"));
+                fileWriter.append(",\"").append(affectedVersionNames).append("\"");
+
+                String fixVersionNames = ticket.getFixVersions().stream()
+                        .map(Release::getName)
+                        .collect(Collectors.joining(";"));
                 fileWriter.append(",\"").append(fixVersionNames).append("\"\n");
             }
         } catch (Exception e) {
@@ -96,6 +105,10 @@ public class JiraController {
     private void parseIssues(JSONArray issues, List<JiraTicket> tickets, List<Release> allReleases) {
 
         //uses releases for the mapping logic
+
+        //needed to parse Jira's specific time format
+        DateTimeFormatter jiraDateFormatter = DateTimeFormatter.ofPattern("yyyy-MM-dd'T'HH:mm:ss.SSSZ");
+
 
         for (int i = 0; i < issues.length(); i++) {
             JSONObject issue = issues.getJSONObject(i);
@@ -110,7 +123,8 @@ public class JiraController {
                 List<Release> affectedReleases = parseReleasesFromJsonArray(fields.optJSONArray("versions"), allReleases);
                 List<Release> fixReleases = parseReleasesFromJsonArray(fields.optJSONArray("fixVersions"), allReleases);
 
-                Instant creationDate = Instant.parse(fields.getString("created"));
+                Instant creationDate = Instant.from(jiraDateFormatter.parse(fields.getString("created")));
+
                 Release openingVersion = ReleaseController.findReleaseByDate(creationDate, allReleases);
 
                 Release injectedVersion = null;
