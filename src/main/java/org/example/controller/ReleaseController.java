@@ -13,6 +13,7 @@ import java.nio.charset.StandardCharsets;
 import java.time.Instant;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.time.ZoneOffset;
 import java.time.chrono.ChronoLocalDate;
 import java.util.ArrayList;
 import java.util.Comparator;
@@ -62,9 +63,15 @@ public class ReleaseController {
                 if (versions.getJSONObject(i).has("id"))
                     id = versions.getJSONObject(i).get("id").toString();
                 date = LocalDate.parse(versions.getJSONObject(i).get("releaseDate").toString());
+
+                //need to use zone offset because of the difference between instant and localdate
+                Instant releaseInstant = date.atStartOfDay().toInstant(ZoneOffset.UTC);
+
+
                 addRelease(versions.getJSONObject(i).get("releaseDate").toString(),
                         name,id);
-                releaseList.add(new Release(id, name, date));
+
+                releaseList.add(new Release(id, name, releaseInstant));
             }
         }
 
@@ -150,10 +157,9 @@ public class ReleaseController {
          //Finds the release that was active at a specific date.
          // Assumes releases are sorted chronologically.
 
-
         Release foundRelease = null;
         for (Release release : allReleases) {
-            if (release.getDate().isAfter(ChronoLocalDate.from(date))) {
+            if (release.getDate().isAfter(date)) {
                 break; // we've gone past the date, the previous one was the correct one
             }
             foundRelease = release;

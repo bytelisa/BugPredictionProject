@@ -2,14 +2,14 @@
 package org.example.entity;
 
 import java.time.LocalDate;
-import java.time.LocalDateTime;
+import java.time.Instant;
 
 public class Release {
     private final String id;
     private final String name;
-    private final LocalDate date;
+    private final Instant date;
 
-    public Release(String id, String name, LocalDate date) {
+    public Release(String id, String name, Instant date) {
         this.id = id;
         this.name = name;
         this.date = date;
@@ -17,7 +17,7 @@ public class Release {
 
     public String getId() { return id; }
     public String getName() { return name; }
-    public LocalDate getDate() { return date; }
+    public Instant getDate() { return date; }
 
     @Override
     public String toString() {
