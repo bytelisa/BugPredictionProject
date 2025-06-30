@@ -10,14 +10,16 @@ import java.io.*;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.nio.charset.StandardCharsets;
+import java.time.Instant;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.time.chrono.ChronoLocalDate;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.HashMap;
 import java.util.List;
 
-public class ReleaseInfoExtractor {
+public class ReleaseController {
 
     /** Class responsibility: extract data and write it onto csv files for it to be later analyzed by classifier
     * ignores the last 66% of releases
@@ -105,7 +107,7 @@ public class ReleaseInfoExtractor {
             }
 
         } catch (Exception e) {
-            Printer.println("Error in csv writer - ReleaseInfoExtractor");
+            Printer.println("Error in csv writer - ReleaseController");
             e.printStackTrace();
         }
         return releaseList;
@@ -141,6 +143,22 @@ public class ReleaseInfoExtractor {
             sb.append((char) cp);
         }
         return sb.toString();
+    }
+
+
+    public Release findReleaseByDate(Instant date, List<Release> allReleases) {
+         //Finds the release that was active at a specific date.
+         // Assumes releases are sorted chronologically.
+
+
+        Release foundRelease = null;
+        for (Release release : allReleases) {
+            if (release.getDate().isAfter(ChronoLocalDate.from(date))) {
+                break; // we've gone past the date, the previous one was the correct one
+            }
+            foundRelease = release;
+        }
+        return foundRelease;
     }
 
 }
